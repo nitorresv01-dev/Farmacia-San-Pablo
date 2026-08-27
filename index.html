@@ -36,7 +36,7 @@
         #reader video { object-fit: cover; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen pb-24">
+<body class="flex flex-col min-h-screen pb-24 bg-fixed bg-center bg-cover" style="background-image: linear-gradient(rgba(244, 247, 246, 0.85), rgba(255, 255, 255, 0.95)), url('fondo-madera.jpg');">
     <!-- Header -->
     <header class="bg-white shadow-md sticky top-0 z-40 border-b-4 border-spBlue">
         <div class="px-4 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
@@ -124,7 +124,7 @@
 
     <!-- Main Content -->
     <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-6">
-        <div id="statusContainer" class="flex flex-col items-center justify-center text-gray-500 my-16 gap-3">
+        <div id="statusContainer" class="flex flex-col items-center justify-center text-gray-500 my-16 gap-3 bg-white/60 backdrop-blur-sm p-10 rounded-3xl max-w-sm mx-auto shadow-sm border border-white/50">
             <div class="loader"></div>
             <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-400 font-normal">Leyendo Excel e ISP</span></span>
         </div>
@@ -579,7 +579,7 @@
                 const qtyInCart = cartItem ? cartItem.cantidad : 0;
                 
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition duration-200`;
+                card.className = `bg-white/80 backdrop-blur-md rounded-2xl p-5 shadow-sm border border-white/50 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
                 
                 let stockBadge = item.disponible 
                     ? `<span class="bg-blue-50 text-spBlueDark px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>`
