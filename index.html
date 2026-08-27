@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cotizador | Farmacia San Pablo</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- NUEVO: LIBRERÍA PARA LEER EXCEL DIRECTAMENTE (.xlsx) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <script>
+        tailwind.config = {
+             theme: { extend: { colors: { 
+                 spWood: '#C19A6B',     /* Café madera claro */
+                 spWoodDark: '#A67B5B', /* Café madera oscuro para acentos */
+                 spGrey: '#6B7280',     /* Gris medio */
+                 spDarkGrey: '#374151'  /* Gris oscuro */
+             } } }
+         }
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; overflow-x: hidden; touch-action: pan-y; background-color: #f4f7f6; }
+        .loader { border: 4px solid #e5e7eb; border-top: 4px solid #A67B5B; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .texto-ajustable { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        #cartModal { transition: opacity 0.3s ease-in-out; }
+        .modal-content { transition: transform 0.3s ease-in-out; }
+        #reader { border-radius: 12px; overflow: hidden; }
+        #reader video { object-fit: cover; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen pb-24">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-40 border-b-4 border-spWood">
+        <div class="px-4 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-3">
+                <div class="relative flex items-center justify-center w-12 h-12 bg-spGrey rounded-full shadow-md">
+                    <i class="fa-solid fa-plus text-white text-3xl"></i>
+                </div>
+                <div class="leading-none">
+                    <h1 class="text-2xl font-extrabold tracking-tight text-spDarkGrey">
+                        FARMACIA <span class="text-spWoodDark">SAN PABLO</span>
+                    </h1>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cañete</span>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center text-sm font-semibold text-gray-500">
+                <i class="fa-solid fa-location-dot text-spWoodDark mr-2"></i> Covadonga 316, Cañete.
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Search -->
+    <section class="bg-spGrey py-8 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
+        <div class="max-w-4xl mx-auto px-4 relative z-10 text-center">
+            <h2 class="text-white text-2xl md:text-3xl font-extrabold mb-2">Cotizador de Precios</h2>
+            <p class="text-gray-200 text-sm md:text-base font-medium">Busca tus medicamentos y calcula tu total al instante.</p>
+            
+            <div class="mt-2 mb-6 text-xs text-gray-300 flex flex-col md:flex-row justify-center items-center gap-1 md:gap-2">
+                <span><i class="fa-solid fa-clock mr-1"></i> La disponibilidad de stock se actualiza una vez al día.</span>
+                <span id="fechaActualizacion" class="font-bold text-white bg-white/20 px-2 py-0.5 rounded"></span>
+            </div>
+
+            <!-- Caja Principal -->
+            <div class="bg-white p-2 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-2">
+                <div class="w-full md:w-1/3 flex items-center border-b md:border-b-0 md:border-r border-gray-100 px-2">
+                    <i class="fa-solid fa-flask text-spWoodDark mr-2"></i>
+                    <select id="labFilter" class="w-full py-3 bg-transparent text-gray-700 text-sm md:text-base outline-none cursor-pointer font-semibold appearance-none" disabled>
+                        <option value="">Todos los laboratorios</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down text-gray-400 text-xs ml-2 pointer-events-none"></i>
+                </div>
+                <div class="w-full md:w-2/3 flex items-center px-2 relative">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-xl mr-2"></i>
+                    
+                    <input type="text" id="searchInput" class="w-full py-3 pr-36 text-base md:text-lg outline-none text-gray-700 bg-transparent placeholder-gray-400" placeholder="Nombre, síntoma o componente..." autocomplete="off" disabled>
+                    
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                        <button id="btnWand" onclick="smartAISearch()" class="bg-blue-500 text-white w-10 h-10 rounded-xl hover:bg-blue-600 shadow-md transition flex items-center justify-center" title="Búsqueda Inteligente (Síntomas)">
+                            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                        </button>
+                        <button onclick="triggerAICamera()" class="bg-spDarkGrey text-white w-10 h-10 rounded-xl hover:bg-black shadow-md transition flex items-center justify-center" title="Analizar caja con IA">
+                            <i class="fa-solid fa-camera text-lg"></i>
+                        </button>
+                        <button onclick="startScanner()" class="bg-spWood text-white w-10 h-10 rounded-xl hover:bg-spWoodDark shadow-md transition flex items-center justify-center" title="Escanear Código">
+                            <i class="fa-solid fa-barcode text-lg"></i>
+                        </button>
+                    </div>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="processAIImage(event)">
+                </div>
+            </div>
+
+            <!-- Banner de IA Activa -->
+            <div id="aiActiveBanner" class="hidden mt-4 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-xl p-3 text-left shadow-lg relative z-20 transition-all duration-300">
+                <div class="flex justify-between items-center gap-2">
+                    <div class="flex-grow">
+                        <h4 class="text-blue-900 font-extrabold text-sm"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-blue-500"></i> Resultados IA para: <span id="aiQueryText" class="text-blue-600"></span></h4>
+                        <p id="aiBrandsText" class="text-[11px] text-blue-700 mt-1 font-semibold opacity-80 leading-tight"></p>
+                    </div>
+                    <button onclick="clearAISearch()" class="text-blue-500 hover:text-white hover:bg-blue-500 bg-blue-100 rounded-lg w-8 h-8 flex items-center justify-center font-bold transition flex-shrink-0 shadow-sm border border-blue-200">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selector Monodroga vs Compuestos -->
+            <div class="mt-5 flex justify-center w-full relative z-20">
+                <div class="bg-black/20 p-1 rounded-xl flex inline-flex text-xs md:text-sm font-bold backdrop-blur-sm border border-white/10 shadow-inner">
+                    <button id="btnFilterAll" onclick="setCompoundFilter('all')" class="px-3 md:px-5 py-2 rounded-lg bg-white text-spDarkGrey shadow-sm transition-all duration-300">Todos</button>
+                    <button id="btnFilterMono" onclick="setCompoundFilter('mono')" class="px-3 md:px-5 py-2 rounded-lg text-gray-200 hover:text-white hover:bg-white/10 transition-all duration-300">Solo Monodrogas</button>
+                    <button id="btnFilterComp" onclick="setCompoundFilter('comp')" class="px-3 md:px-5 py-2 rounded-lg text-gray-200 hover:text-white hover:bg-white/10 transition-all duration-300">Asociados (+)</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-6">
+        <div id="statusContainer" class="flex flex-col items-center justify-center text-gray-500 my-16 gap-3">
+            <div class="loader"></div>
+            <span class="font-semibold text-base text-spDarkGrey text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-400 font-normal">Leyendo Excel e ISP</span></span>
+        </div>
+        <div class="flex justify-between items-center mb-4 hidden" id="resultsHeader">
+            <div class="text-sm text-gray-600 font-bold bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100" id="resultsCount"></div>
+        </div>
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
+    </main>
+
+    <!-- Barra Flotante del Carrito -->
+    <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex flex-col">
+                <span class="text-xs text-gray-500 font-bold uppercase">Total Cotización</span>
+                <span id="floatingTotal" class="text-2xl font-black text-spDarkGrey">$0</span>
+            </div>
+            <button onclick="toggleCart()" class="bg-spWoodDark hover:bg-spWood text-white px-6 py-3 rounded-xl font-bold shadow-md transition flex items-center gap-2">
+                <i class="fa-solid fa-cart-shopping"></i> <span id="floatingCount">0</span> Ítems
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal del Carrito -->
+    <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end">
+        <div class="modal-content w-full md:w-[400px] bg-gray-50 h-full flex flex-col transform translate-x-full">
+            <div class="bg-white px-5 py-4 flex justify-between items-center border-b border-gray-100 shadow-sm">
+                <h2 class="text-xl font-extrabold text-gray-800"><i class="fa-solid fa-receipt text-spWood mr-2"></i> Tu Cotización</h2>
+                <button onclick="toggleCart()" class="text-gray-400 hover:text-red-500 transition text-2xl">&times;</button>
+            </div>
+            <div id="cartItems" class="flex-grow overflow-y-auto p-4 flex flex-col gap-3"></div>
+            <div class="bg-white border-t border-gray-200 p-5 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+                <div class="flex justify-between items-end mb-4">
+                    <span class="text-gray-500 font-bold">Total a Pagar:</span>
+                    <span id="cartTotal" class="text-3xl font-black text-spDarkGrey">$0</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="clearCart()" class="bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl font-bold transition flex-1 border border-red-100">Vaciar</button>
+                    <button onclick="sendWhatsApp('56900000000')" class="bg-[#25D366] hover:bg-[#1EBE5C] text-white px-4 py-3 rounded-xl font-bold transition flex-[2] flex justify-center items-center gap-2 shadow-md">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Enviar a Farmacia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal del Escáner -->
+    <div id="scannerModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex-col justify-center items-center backdrop-blur-sm">
+        <div class="bg-white p-5 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
+            <button onclick="stopScanner()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
+            <h3 class="text-lg font-bold text-spDarkGrey mb-3 text-center"><i class="fa-solid fa-barcode mr-2"></i>Escanear Producto</h3>
+            <div id="reader" class="w-full bg-black rounded-xl"></div>
+            <p class="text-xs text-center text-gray-500 mt-4 font-semibold">Apunta la cámara al código de barras.</p>
+        </div>
+    </div>
+
+    <!-- Modal de Resultados IA -->
+    <div id="aiModal" class="fixed inset-0 bg-black/80 z-[80] hidden flex-col justify-center items-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
+            <button onclick="closeAIModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
+            <h3 class="text-xl font-black text-spDarkGrey mb-1 text-center"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-spWood"></i>Resultados IA</h3>
+            <p class="text-sm text-center text-gray-500 font-semibold mb-5">Selecciona el nombre correcto del producto:</p>
+            <div id="aiSuggestionsList" class="flex flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <script>
+        // RUTA DE TU EXCEL ALOJADO EN GITHUB (Renombra tu archivo del sistema a maestro.xlsx y súbelo)
+        const URL_EXCEL_MAESTRO = "maestro.xlsx?nocache=" + new Date().getTime();
+        
+        // RUTAS DE GOOGLE SHEETS PARA BASES ESTÁTICAS
+        const GID_EAN13 = "1436350776"; 
+        const URL_CSV_EAN13 = "https://docs.google.com/spreadsheets/d/1GjVV8vuErPNmOIVkP-pk6VPiTrlf4IQby2v-OS0J3Zg/export?format=csv&gid=" + GID_EAN13 + "&nocache=" + new Date().getTime();
+        const GID_ISP = "123869210"; 
+        const URL_CSV_ISP = "https://docs.google.com/spreadsheets/d/1GjVV8vuErPNmOIVkP-pk6VPiTrlf4IQby2v-OS0J3Zg/export?format=csv&gid=" + GID_ISP + "&nocache=" + new Date().getTime();
+        
+        let allProducts = [];
+        let filteredProducts = [];
+        let cart = [];
+
+        let currentPage = 1;
+        const itemsPerPage = 24;
+        const clpFmt = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
+        
+        let html5QrcodeScanner = null;
+        let compoundFilter = 'all'; 
+        let activeAISearchTerms = [];
+        let imagenesBD = {}; 
+
+        window.onload = () => {
+            document.getElementById('searchInput').addEventListener('input', () => { 
+                currentPage = 1; 
+                applyFilters(); 
+            });
+            document.getElementById('labFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+            cargarBasesDeDatos();
+        };
+
+        async function cargarBasesDeDatos() {
+            // Lector de CSV (para las bases de datos de Google Sheets)
+            const fetchCSV = (url) => new Promise((resolve) => {
+                try {
+                    Papa.parse(url, {
+                        download: true,
+                        header: false,
+                        complete: (results) => resolve(results.data),
+                        error: (err) => resolve([]) 
+                    });
+                } catch(e) {
+                    resolve([]);
+                }
+            });
+
+            // Lector nativo de Excel (NUEVO)
+            const fetchExcel = async (url) => {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) return [];
+                    const arrayBuffer = await response.arrayBuffer();
+                    const data = new Uint8Array(arrayBuffer);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    // Convierte la hoja a una matriz (Array of Arrays) igual a PapaParse
+                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: "", raw: false}); 
+                    return json;
+                } catch (e) {
+                    console.error("Error leyendo Excel:", e);
+                    return [];
+                }
+            };
+
+            // CARGAR EL MAPA DE IMÁGENES
+            try {
+                const resJson = await fetch("imagenes_map.json?nocache=" + new Date().getTime());
+                if (resJson.ok) imagenesBD = await resJson.json();
+            } catch (e) { console.log("Aún no hay banco de imágenes."); }
+
+            // DESCARGAR EXCEL Y CSV AL MISMO TIEMPO
+            try {
+                const [maestroData, ean13Data, ispData] = await Promise.all([
+                    fetchExcel(URL_EXCEL_MAESTRO),
+                    fetchCSV(URL_CSV_EAN13),
+                    fetchCSV(URL_CSV_ISP)
+                ]);
+                procesarDatos(maestroData, ean13Data, ispData);
+            } catch (error) {
+                console.error("Error crítico cargando datos:", error);
+                document.getElementById('statusContainer').innerHTML = `
+                    <div class="text-red-500 text-center flex flex-col items-center justify-center p-6 bg-red-50 rounded-2xl border border-red-100 max-w-md mx-auto">
+                        <i class="fa-solid fa-wifi text-5xl mb-4 text-red-400"></i>
+                        <h3 class="font-black text-xl mb-2">Error de Sistema</h3>
+                        <p class="text-sm font-medium text-red-800 leading-snug">
+                            No se pudo ejecutar la aplicación.<br><br>
+                            Asegúrate de haber subido tu archivo <b>maestro.xlsx</b> a GitHub.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function limpiarTextoFarma(texto) {
+            if(!texto) return "";
+            return texto.toUpperCase()
+                .replace(/\([^)]*\)/g, '') 
+                .replace(/\b[0-9]+([.,][0-9]+)?\s*(MG|ML|GR|G|MCG|UI|U|UI\/ML|%|L|KG)\b/gi, '') 
+                .replace(/\b(COMP|COMPRIMIDO|COMPRIMIDOS|RECUBIERTO|RECUBIERTOS|JBE|JARABE|CAPS|CAPSULAS|SUSP|SUSPENSION|SOL|SOLUCION|GTS|GOTAS|SOBRES|INY|INYECTABLE|CREMA|POMADA|UNG|OVULOS|AMP|FCO|TAB|PILD|CM|REC|FORTE|PLUS)\b/gi, '') 
+                .replace(/[^A-Z \s]/g, ' ') 
+                .replace(/\s+/g, ' ') 
+                .trim();
+        }
+
+        function clearAISearch() {
+            activeAISearchTerms = [];
+            document.getElementById('aiActiveBanner').classList.add('hidden');
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = "";
+            searchInput.placeholder = "Nombre, síntoma o componente...";
+            
+            const btnWand = document.getElementById('btnWand');
+            btnWand.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-lg"></i>';
+            btnWand.classList.remove('bg-red-500', 'hover:bg-red-600');
+            btnWand.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            btnWand.title = "Búsqueda Inteligente (Síntomas)";
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function setCompoundFilter(type) {
+            compoundFilter = type;
+            const btnAll = document.getElementById('btnFilterAll');
+            const btnMono = document.getElementById('btnFilterMono');
+            const btnComp = document.getElementById('btnFilterComp');
+            
+            const activeClass = "bg-white text-spDarkGrey shadow-sm".split(" ");
+            const inactiveClass = "text-gray-200 hover:text-white hover:bg-white/10".split(" ");
+            
+            [btnAll, btnMono, btnComp].forEach(btn => {
+                btn.classList.remove(...activeClass);
+                btn.classList.add(...inactiveClass);
+            });
+
+            if(type === 'all') { btnAll.classList.remove(...inactiveClass); btnAll.classList.add(...activeClass); }
+            if(type === 'mono') { btnMono.classList.remove(...inactiveClass); btnMono.classList.add(...activeClass); }
+            if(type === 'comp') { btnComp.classList.remove(...inactiveClass); btnComp.classList.add(...activeClass); }
+
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function procesarDatos(rawDataMaestro, rawDataEan, rawDataIsp) {
+            
+            // DETECTOR DE CABECERAS (Detecta dinámicamente dónde comienza tu Excel)
+            let headerRowIndex = -1; 
+            let lastUpdateStr = "(Stock de hoy)";
+            
+            for (let i = 0; i < Math.min(20, rawDataMaestro.length); i++) {
+                if (!rawDataMaestro[i]) continue;
+                rawDataMaestro[i].forEach(cell => {
+                    let textCell = String(cell).trim();
+                    if (textCell.toLowerCase().includes('fecha')) { lastUpdateStr = textCell; }
+                });
+                let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
+                if (rowStr.includes("LAB") && (rowStr.includes("DETALLE") || rowStr.includes("PRECIO"))) { 
+                    headerRowIndex = i; 
+                    break; 
+                }
+            }
+
+            if (headerRowIndex === -1) {
+                document.getElementById('statusContainer').innerHTML = `
+                    <div class="text-red-500 text-center flex flex-col items-center justify-center p-6 bg-red-50 rounded-2xl border border-red-100 max-w-md mx-auto">
+                        <i class="fa-solid fa-triangle-exclamation text-5xl mb-4 text-red-400"></i>
+                        <h3 class="font-black text-xl mb-2">¡Catálogo No Encontrado!</h3>
+                        <p class="text-sm font-medium text-red-800 leading-snug">
+                            No se encontró un archivo Excel válido.<br><br>
+                            Asegúrate de exportar desde tu sistema, renombrarlo como <b>maestro.xlsx</b> y subirlo a GitHub.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 1. Mapear Códigos de Barra Extra (EAN13)
+            let barcodeMap = {};
+            let esValidoEAN = rawDataEan && rawDataEan.length > 0 && rawDataEan.some(row => row && String(row[0]).toUpperCase().includes("EAN_13"));
+            
+            if (esValidoEAN) {
+                for (let i = 1; i < rawDataEan.length; i++) { 
+                    let row = rawDataEan[i];
+                    if (!row || row.length < 2) continue;
+                    let ean = String(row[0]).trim();
+                    let codi = String(row[1]).trim();
+                    if (ean && codi) {
+                        if (!barcodeMap[codi]) barcodeMap[codi] = [];
+                        barcodeMap[codi].push(ean);
+                    }
+                }
+            }
+
+            // 2. Mapear Principios Activos Oficiales (ISP)
+            let ispMapExacto = {};
+            let ispMapLimpio = {};
+            const COL_NOMBRE_ISP = 1;    // Columna B 
+            const COL_PRINCIPIO_ISP = 3; // Columna D 
+
+            if (rawDataIsp && rawDataIsp.length > 0) {
+                for (let i = 1; i < rawDataIsp.length; i++) { 
+                    let row = rawDataIsp[i];
+                    if (!row || row.length <= Math.max(COL_NOMBRE_ISP, COL_PRINCIPIO_ISP)) continue;
+                    
+                    let nombreComercialISP = String(row[COL_NOMBRE_ISP]).trim().toUpperCase();
+                    let principioOficialISP = String(row[COL_PRINCIPIO_ISP]).trim().toUpperCase();
+                    
+                    if (!principioOficialISP || principioOficialISP === "") {
+                        if (nombreComercialISP.includes('(')) {
+                            let match = nombreComercialISP.match(/\(([^)]+)\)/);
+                            if (match) {
+                                principioOficialISP = match[1].trim(); 
+                            }
+                        }
+                    }
+
+                    if (nombreComercialISP && principioOficialISP) {
+                        ispMapExacto[nombreComercialISP] = principioOficialISP;
+                        
+                        let nombreLimpio = limpiarTextoFarma(nombreComercialISP);
+                        if (nombreLimpio && nombreLimpio.length >= 3) {
+                            ispMapLimpio[nombreLimpio] = principioOficialISP;
+                        }
+                    }
+                }
+            }
+
+            let tempProducts = [];
+            
+            for (let i = headerRowIndex + 1; i < rawDataMaestro.length; i++) {
+                const row = rawDataMaestro[i];
+                if (!row || row.length < 8) continue;
+
+                let precioStr = typeof row[7] === 'string' ? row[7].replace(/[^0-9]/g, '') : row[7];
+                let precio = parseInt(precioStr);
+                let stock = parseInt(row[10]) || 0;
+                let labName = String(row[0]).trim();
+                let codigoInterno = String(row[2]).trim(); 
+                let codigoBarrasBase = row[3] ? String(row[3]).trim() : "";
+                
+                let nombre = String(row[4]).trim();
+                let nombreParaCruce = nombre.toUpperCase();
+                let nombreLimpioMaestro = limpiarTextoFarma(nombreParaCruce);
+                
+                let principioActivo = row[12] ? String(row[12]).trim() : "";
+                let principioEncontrado = "";
+                
+                // CRUCE ISP
+                if (ispMapExacto[nombreParaCruce]) {
+                    principioEncontrado = ispMapExacto[nombreParaCruce];
+                } else if (ispMapLimpio[nombreLimpioMaestro]) {
+                    principioEncontrado = ispMapLimpio[nombreLimpioMaestro];
+                } else {
+                    let palabras = nombreLimpioMaestro.split(' ');
+                    if (palabras.length > 0) {
+                        let p1 = palabras[0];
+                        let p2 = palabras.length > 1 ? p1 + ' ' + palabras[1] : null;
+                        let p3 = palabras.length > 2 ? p2 + ' ' + palabras[2] : null;
+
+                        if (p3 && ispMapLimpio[p3]) {
+                            principioEncontrado = ispMapLimpio[p3];
+                        } else if (p2 && ispMapLimpio[p2]) {
+                            principioEncontrado = ispMapLimpio[p2];
+                        } else if (p1 && p1.length >= 4 && ispMapLimpio[p1]) {
+                            principioEncontrado = ispMapLimpio[p1];
+                        }
+                    }
+                }
+
+                if (principioEncontrado && principioEncontrado !== "") {
+                    principioActivo = principioEncontrado;
+                }
+
+                let principioNormalizado = principioActivo
+                    .replace(/\s*\/\/\s*/g, ' + ') 
+                    .replace(/\s*\/\s*/g, ' + ')   
+                    .replace(/\s*-\s*/g, ' + ')
+                    .replace(/\s*;\s*/g, ' + ')
+                    .replace(/\s*,\s*/g, ' + ')
+                    .replace(/\s+\by\b\s+/gi, ' + ')
+                    .replace(/\s+\be\b\s+/gi, ' + ')
+                    .replace(/\s*&\s*/g, ' + ')
+                    .replace(/\s*\+\s*\+/g, ' + ') 
+                    .trim();
+                
+                principioNormalizado = principioNormalizado.replace(/^\+\s*/, '').replace(/\s*\+$/, '');
+
+                let todosLosCodigos = codigoBarrasBase;
+                if (barcodeMap[codigoInterno]) {
+                    todosLosCodigos += " " + barcodeMap[codigoInterno].join(" ");
+                }
+
+                if (nombre && !isNaN(precio) && precio > 0) {
+                    tempProducts.push({
+                        id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i,
+                        lab: labName,
+                        nombre: nombre,
+                        precio: precio,
+                        principio: principioNormalizado,
+                        barcode: todosLosCodigos.trim(), 
+                        disponible: stock > 0 
+                    });
+                }
+            }
+
+            allProducts = tempProducts;
+
+            const labs = [...new Set(allProducts.map(p => p.lab).filter(l => l !== ''))].sort();
+            const labFilter = document.getElementById('labFilter');
+            labFilter.innerHTML = '<option value="">Todos los laboratorios</option>';
+            labs.forEach(lab => {
+                const opt = document.createElement('option');
+                opt.value = lab;
+                opt.innerText = lab;
+                labFilter.appendChild(opt);
+            });
+
+            const dateSpan = document.getElementById('fechaActualizacion');
+            if (dateSpan) dateSpan.innerText = lastUpdateStr;
+
+            document.getElementById('statusContainer').style.display = 'none';
+            document.getElementById('resultsHeader').classList.remove('hidden');
+            
+            document.getElementById('searchInput').disabled = false;
+            document.getElementById('labFilter').disabled = false;
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const rawSearchInput = document.getElementById('searchInput').value.toLowerCase().trim();
+            const terms = rawSearchInput === "" ? [] : rawSearchInput.replace(/\+/g, ' ').split(/\s+/);
+            
+            const selectedLab = document.getElementById('labFilter').value;
+
+            filteredProducts = allProducts.filter(p => {
+                const searchable = `${p.nombre} ${p.lab} ${p.principio} ${p.barcode}`.toLowerCase();
+
+                let textMatch = false;
+                if (activeAISearchTerms.length > 0) {
+                    let matchIA = activeAISearchTerms.some(cleanTerm => {
+                        try {
+                            const safeTerm = cleanTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(`\\b${safeTerm}\\b`, 'i');
+                            return regex.test(p.nombre) || regex.test(p.principio);
+                        } catch(e) {
+                            return p.nombre.toLowerCase().includes(cleanTerm.toLowerCase()) ||
+                                   p.principio.toLowerCase().includes(cleanTerm.toLowerCase());
+                        }
+                    });
+                    if (terms.length > 0) {
+                        textMatch = matchIA && terms.every(t => searchable.includes(t));
+                    } else {
+                        textMatch = matchIA;
+                    }
+                } else {
+                    textMatch = terms.length === 0 ? true : terms.every(t => searchable.includes(t));
+                }
+                
+                const labMatch = selectedLab === "" ? true : p.lab === selectedLab;
+                
+                let compoundMatch = true;
+                if (compoundFilter !== 'all') {
+                    const isCompound = String(p.principio || "").includes('+');
+                    if (compoundFilter === 'mono') compoundMatch = !isCompound;
+                    if (compoundFilter === 'comp') compoundMatch = isCompound;
+                }
+
+                return textMatch && labMatch && compoundMatch;
+            });
+
+            renderPage();
+        }
+
+        function renderPage() {
+            const grid = document.getElementById('productsGrid');
+            const totalItems = filteredProducts.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            document.getElementById('resultsCount').innerHTML = `Mostrando ${totalItems} productos`;
+            grid.innerHTML = '';
+
+            if (totalItems === 0) {
+                grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-400"><i class="fa-solid fa-pills text-5xl mb-4 text-gray-300"></i><p class="text-lg">No encontramos resultados para esta búsqueda.</p></div>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            const currentItems = filteredProducts.slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage);
+
+            currentItems.forEach(item => {
+                const cartItem = cart.find(c => c.id === item.id);
+                const qtyInCart = cartItem ? cartItem.cantidad : 0;
+                
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition duration-200`;
+                
+                let stockBadge = item.disponible 
+                    ? `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>`
+                    : `<span class="bg-red-50 text-red-500 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
+
+                let btnHtml = item.disponible 
+                    ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-orange-50 text-spWoodDark hover:bg-spWoodDark hover:text-white border border-orange-100 font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Agregar
+                       </button>`
+                    : `<button disabled class="w-full mt-4 bg-gray-50 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-100">Sin Stock</button>`;
+
+                if(qtyInCart > 0) {
+                    btnHtml = `
+                        <div class="w-full mt-4 flex items-center justify-between bg-spWoodDark text-white rounded-xl overflow-hidden shadow-sm">
+                            <button onclick="updateQty('${item.id}', -1)" class="px-4 py-2 hover:bg-spWood font-bold transition">-</button>
+                            <span class="font-bold">${qtyInCart} en lista</span>
+                            <button onclick="updateQty('${item.id}', 1)" class="px-4 py-2 hover:bg-spWood font-bold transition">+</button>
+                        </div>
+                    `;
+                }
+
+                let principioDisplay = item.principio 
+                    ? `<div class="text-[10px] font-bold text-spWoodDark/80 bg-orange-50 px-2 py-1.5 rounded-lg border border-orange-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="texto-ajustable">${item.principio}</span></div>`
+                    : `<div class="flex-grow"></div>`;
+
+                let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
+                
+                let urlImagen = imagenesBD[primaryBarcode];
+                let imagenHtml = "";
+                
+                if (urlImagen && urlImagen !== "NO_IMAGE") {
+                    imagenHtml = `
+                    <div class="w-full h-32 flex items-center justify-center mb-3 p-2 bg-white rounded-xl">
+                        <img src="${urlImagen}" alt="${item.nombre}" class="max-h-full max-w-full object-contain" onerror="this.style.display='none'">
+                    </div>`;
+                } else {
+                    let iconColor = item.disponible ? "text-spWood/20" : "text-gray-200";
+                    imagenHtml = `
+                    <div class="w-full h-32 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-xl mb-3">
+                        <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
+                    </div>`;
+                }
+
+                let barcodeDisplay = primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</div>
+                        ${stockBadge}
+                    </div>
+                    ${imagenHtml} 
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-1 leading-snug texto-ajustable">${item.nombre}</h3>
+                    ${principioDisplay}
+                    ${barcodeDisplay}
+                    <div class="text-2xl font-black text-spDarkGrey leading-none">${clpFmt.format(item.precio)}</div>
+                    ${btnHtml}
+                `;
+                grid.appendChild(card);
+            });
+
+            renderPagination(totalPages);
+        }
+
+        function addToCart(id, nombre, precio) { cart.push({ id, nombre, precio, cantidad: 1 }); updateCartUI(); renderPage(); }
+
+        function updateQty(id, change) {
+            let itemIndex = cart.findIndex(c => c.id === id);
+            if(itemIndex > -1) {
+                cart[itemIndex].cantidad += change;
+                if(cart[itemIndex].cantidad <= 0) cart.splice(itemIndex, 1);
+            }
+            updateCartUI(); renderPage(); renderCartModal(); 
+        }
+
+        function clearCart() { if(confirm("¿Deseas vaciar tu cotización?")) { cart = []; updateCartUI(); renderPage(); toggleCart(); } }
+
+        function updateCartUI() {
+            const floatingCart = document.getElementById('floatingCart');
+            let totalItems = 0; let totalMoney = 0;
+
+            cart.forEach(item => { totalItems += item.cantidad; totalMoney += (item.precio * item.cantidad); });
+
+            document.getElementById('floatingCount').innerText = totalItems;
+            document.getElementById('floatingTotal').innerText = clpFmt.format(totalMoney);
+            document.getElementById('cartTotal').innerText = clpFmt.format(totalMoney);
+
+            if(totalItems > 0) floatingCart.classList.remove('translate-y-full');
+            else {
+                floatingCart.classList.add('translate-y-full');
+                if(!document.getElementById('cartModal').classList.contains('hidden')) toggleCart();
+            }
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cartModal');
+            const content = modal.querySelector('.modal-content');
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden'); renderCartModal();
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); content.classList.add('translate-x-full');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            }
+        }
+
+        function renderCartModal() {
+            const container = document.getElementById('cartItems'); container.innerHTML = '';
+            if(cart.length === 0) { container.innerHTML = `<div class="text-center py-10 text-gray-400"><p>Tu cotización está vacía</p></div>`; return; }
+
+            cart.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center";
+                div.innerHTML = `
+                    <div class="flex-grow pr-2">
+                        <h4 class="text-sm font-bold text-gray-800 leading-tight texto-ajustable mb-1">${item.nombre}</h4>
+                        <div class="text-xs font-bold text-spWoodDark">${clpFmt.format(item.precio)} c/u</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                        <div class="font-black text-gray-800">${clpFmt.format(item.precio * item.cantidad)}</div>
+                        <div class="flex items-center bg-gray-100 rounded-lg overflow-hidden">
+                            <button onclick="updateQty('${item.id}', -1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">-</button>
+                            <span class="px-2 text-sm font-bold text-gray-800">${item.cantidad}</span>
+                            <button onclick="updateQty('${item.id}', 1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">+</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function sendWhatsApp(phone) {
+            if(cart.length === 0) return;
+            let total = 0; let text = "Hola Farmacia San Pablo! %0AQuisiera consultar por la siguiente cotización:%0A%0A";
+            cart.forEach(item => {
+                let sub = item.precio * item.cantidad; total += sub;
+                text += `• ${item.cantidad}x ${item.nombre} (${clpFmt.format(sub)})%0A`;
+            });
+            text += `%0A*Total estimado: ${clpFmt.format(total)}*%0A%0A¿Tienen disponibilidad de estos productos?`;
+            window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('pagination'); container.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const createBtn = (html, disabled, onClick) => {
+                const b = document.createElement('button'); b.innerHTML = html; b.disabled = disabled; b.onclick = onClick;
+                b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${disabled ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white' : 'text-spWoodDark border-spWoodDark hover:bg-spWoodDark hover:text-white bg-white'}`;
+                return b;
+            };
+
+            container.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
+            const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; container.appendChild(info);
+            container.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
+        }
+
+        function startScanner() {
+            const modal = document.getElementById('scannerModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, 
+                (decodedText, decodedResult) => {
+                    stopScanner();
+                    document.getElementById('searchInput').value = decodedText;
+                    currentPage = 1;
+                    applyFilters();
+                },
+                (errorMessage) => {}
+            ).catch(err => {
+                alert("Error al acceder a la cámara. Asegúrate de dar los permisos correspondientes.");
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            const modal = document.getElementById('scannerModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(err => console.error("Error al detener cámara", err));
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DE INTELIGENCIA ARTIFICIAL (GEMINI 3.1 FLASH-LITE)
+        // ==========================================
+        
+        // ¡ACTUALIZA TU API KEY AQUÍ!
+        const GEMINI_API_KEY = "AQ.Ab8RN6KZs-NasdJEA3H0kCFyPEzLUC84R8nlZ0ecBgeJ3lwIWQ"; 
+
+        async function smartAISearch() {
+            const input = document.getElementById('searchInput');
+            const btnWand = document.getElementById('btnWand');
+            
+            if (activeAISearchTerms.length > 0) {
+                clearAISearch();
+                return;
+            }
+
+            const query = input.value.trim();
+            if(!query) {
+                alert("Escribe qué estás buscando primero (ej: 'Resfriado' o 'Dolor de guata').");
+                return;
+            }
+
+            if(!GEMINI_API_KEY) {
+                alert("La API Key no está configurada."); return;
+            }
+
+            const originalText = input.value;
+            input.disabled = true;
+            input.value = "IA pensando...";
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ 
+                        text: `Eres el farmacéutico jefe de una farmacia en Chile. El cliente tiene este requerimiento o síntoma: "${query}". Genera una lista de 10 a 15 términos estratégico para buscar en nuestro inventario. REGLAS ESTRICTAS: 1. Incluye los nombres de los PRINCIPIOS ACTIVOS GENÉRICOS que sirven para esto (ej: PARACETAMOL, CLORFENAMINA, IBUPROFENO). 2. Incluye las MARCAS COMERCIALES más vendidas en Chile para esto (ej: TAPSIN, NASTIZOL, TRIOVAL). 3. NO inventes medicamentos que no existen. 4. REGLA CRÍTICA DE ALERGIAS: Si el usuario busca un principio activo específico (ej: Fexofenadina), NO incluyas otras marcas de antialérgicos distintos (ej: NO incluyas Alerpriv, NO incluyas Zyrtec). Solo marcas de ese compuesto exacto. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas sin explicaciones.` 
+                    }]
+                }]
+            };
+            
+            try {
+                const response = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                const data = await response.json();
+                
+                input.disabled = false;
+
+                if (data.error) {
+                    alert("Error de Google: " + data.error.message);
+                    input.value = originalText;
+                    return;
+                }
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    let aiText = data.candidates[0].content.parts[0].text.trim().replace(/```json/gi, '').replace(/```/g, '').trim();
+                    try {
+                        const rawTerms = JSON.parse(aiText);
+                        
+                        activeAISearchTerms = rawTerms.map(term => term.trim()).filter(term => term.length >= 3);
+                        
+                        input.value = "";
+                        input.placeholder = `✨ IA activa para: "${originalText}". Escribe para filtrar...`;
+                        
+                        btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>';
+                        btnWand.classList.replace('bg-blue-500', 'bg-red-500');
+                        btnWand.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
+                        btnWand.title = "Apagar Inteligencia Artificial";
+
+                        currentPage = 1;
+                        applyFilters();
+
+                    } catch (e) {
+                        console.error("Error parseando resultados de IA:", e);
+                        alert("La IA devolvió un formato incorrecto.");
+                        input.value = originalText;
+                    }
+                }
+            } catch(e) { 
+                console.error(e); 
+                alert("Error de red al conectar con IA.");
+                input.disabled = false;
+                input.value = originalText;
+            }
+        }
+
+        function triggerAICamera() {
+            document.getElementById('cameraInput').click();
+        }
+
+        function closeAIModal() {
+            const modal = document.getElementById('aiModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (document.getElementById('searchInput').value === "Procesando imagen con IA...") {
+                document.getElementById('searchInput').value = "";
+            }
+        }
+
+        function selectAISuggestion(selectedName) {
+            closeAIModal();
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = selectedName;
+            
+            clearAISearch(); 
+            searchInput.value = selectedName; 
+            applyFilters();
+        }
+
+        async function processAIImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const searchInput = document.getElementById('searchInput');
+            searchInput.disabled = true;
+            searchInput.value = "Procesando imagen con IA...";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                    callGeminiCameraAPI(base64Image);
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        async function callGeminiCameraAPI(base64Image) {
+            const input = document.getElementById('searchInput');
+
+            if(!GEMINI_API_KEY) {
+                alert("Primero debes ingresar tu API Key de Gemini en el código fuente.");
+                input.value = "";
+                input.disabled = false;
+                return;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "Eres un experto farmacéutico analizando el empaque de un producto (puede ser medicamento, cosmético, dermocosmética o insumo). Extrae el nombre comercial principal. Dame de 3 a 5 variaciones probables. Responde ÚNICAMENTE con un array en formato JSON puro, sin explicaciones. Ejemplo estricto: [\"U.CARE\", \"U CARE CREMA\", \"U.CARE CUERPO\"]" },
+                        { inlineData: { mimeType: "image/jpeg", data: base64Image } }
+                    ]
+                }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                input.disabled = false;
+
+                if (data.error) {
+                    alert("Error de Google: " + data.error.message);
+                    input.value = "";
+                    return;
+                }
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    let aiText = data.candidates[0].content.parts[0].text.trim();
+                    aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    
+                    try {
+                        const suggestions = JSON.parse(aiText);
+                        
+                        if (Array.isArray(suggestions) && suggestions.length > 0) {
+                            const listContainer = document.getElementById('aiSuggestionsList');
+                            listContainer.innerHTML = '';
+                            
+                            suggestions.forEach(sug => {
+                                const btn = document.createElement('button');
+                                btn.className = "bg-orange-50 border border-orange-100 text-spWoodDark hover:bg-spWoodDark hover:text-white font-extrabold py-3 px-4 rounded-xl transition text-left text-lg shadow-sm";
+                                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass mr-2 opacity-50"></i> ${sug}`;
+                                btn.onclick = () => selectAISuggestion(sug);
+                                listContainer.appendChild(btn);
+                            });
+                            
+                            const modal = document.getElementById('aiModal');
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                            input.value = "Esperando selección...";
+                            
+                        } else {
+                            throw new Error("El JSON no es un array válido");
+                        }
+                    } catch (parseError) {
+                        console.error("Error leyendo JSON de IA:", parseError);
+                        const fallbackName = aiText.split(',')[0].replace(/[\[\]"]/g, '').trim();
+                        input.value = fallbackName;
+                        
+                        clearAISearch();
+                        input.value = fallbackName;
+                        applyFilters();
+                    }
+
+                } else if (data.promptFeedback) {
+                    alert("Google bloqueó el análisis de esta imagen por sus filtros de seguridad.");
+                    input.value = "";
+                } else {
+                    alert("La IA procesó la imagen pero no devolvió un nombre válido.");
+                    input.value = "";
+                }
+            } catch (error) {
+                console.error("Error AI:", error);
+                alert("Error de red al conectar con la IA. Revisa el internet.");
+                input.value = "";
+                input.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
