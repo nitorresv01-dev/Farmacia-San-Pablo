@@ -8,18 +8,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
+    <!-- LIBRERÍAS DE LECTURA DE DATOS (Solo CSV, mucho más rápido) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
     <script>
         tailwind.config = {
              theme: { extend: { colors: { 
-                 spBlue: '#7DA1BF',      /* Azul característico del logo */
-                 spBlueDark: '#5A80A0',  /* Azul oscurecido para textos y hover */
-                 spWood: '#E6D3B3',      /* Tono madera claro del letrero */
-                 spWoodDark: '#CFA771'   /* Tono madera oscuro para contrastes */
+                 spBlue: '#7DA1BF',      /* Azul característico */
+                 spBlueDark: '#5A80A0',  /* Azul oscurecido */
+                 spWood: '#E6D3B3',      /* Tono madera claro */
+                 spWoodDark: '#CFA771'   /* Tono madera oscuro */
              } } }
          }
     </script>
@@ -30,15 +29,19 @@
         .texto-ajustable { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        #cartModal { transition: opacity 0.3s ease-in-out; }
+        #cartModal, #apiModal { transition: opacity 0.3s ease-in-out; }
         .modal-content { transition: transform 0.3s ease-in-out; }
         #reader { border-radius: 12px; overflow: hidden; }
         #reader video { object-fit: cover; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen pb-24 bg-fixed bg-center bg-cover" style="background-image: linear-gradient(rgba(244, 247, 246, 0.85), rgba(255, 255, 255, 0.95)), url('fondo-madera.jpg');">
+    
+    <!-- Sistema de Notificaciones Toast -->
+    <div id="toastContainer" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
     <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-40 border-b-4 border-spBlue">
+    <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b-4 border-spBlue">
         <div class="px-4 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-3">
                 <div class="relative flex items-center justify-center w-12 h-12 bg-spBlue rounded-full shadow-md">
@@ -51,27 +54,26 @@
                     <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tu vida, tu barrio, tu farmacia</span>
                 </div>
             </div>
-            <div class="hidden md:flex items-center text-sm font-semibold text-gray-500">
-                <i class="fa-solid fa-location-dot text-spBlueDark mr-2"></i> Covadonga 316, Cañete.
+            <div class="flex items-center gap-4 text-sm font-semibold text-gray-500">
+                <button onclick="openApiModal()" class="text-gray-400 hover:text-spBlue transition" title="Configurar Inteligencia Artificial">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+                <div class="hidden md:flex items-center">
+                    <i class="fa-solid fa-location-dot text-spBlueDark mr-2"></i> Covadonga 316, Cañete.
+                </div>
             </div>
         </div>
     </header>
 
     <!-- Hero Search -->
-    <section class="bg-spBlue py-8 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/10"></div>
+    <section class="bg-spBlue/90 backdrop-blur-sm py-8 relative overflow-hidden shadow-inner">
         <div class="max-w-4xl mx-auto px-4 relative z-10 text-center">
             <h2 class="text-white text-2xl md:text-3xl font-extrabold mb-2">Cotizador de Precios</h2>
             <p class="text-white/90 text-sm md:text-base font-medium">Busca tus medicamentos y calcula tu total al instante.</p>
             
-            <div class="mt-2 mb-6 text-xs text-white/80 flex flex-col md:flex-row justify-center items-center gap-1 md:gap-2">
-                <span><i class="fa-solid fa-clock mr-1"></i> La disponibilidad de stock se actualiza diariamente.</span>
-                <span id="fechaActualizacion" class="font-bold text-white bg-black/10 px-2 py-0.5 rounded"></span>
-            </div>
-
             <!-- Caja Principal -->
-            <div class="bg-white p-2 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-2">
-                <div class="w-full md:w-1/3 flex items-center border-b md:border-b-0 md:border-r border-gray-100 px-2">
+            <div class="mt-6 bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-2 border border-white/50">
+                <div class="w-full md:w-1/3 flex items-center border-b md:border-b-0 md:border-r border-gray-200 px-2">
                     <i class="fa-solid fa-flask text-spBlueDark mr-2"></i>
                     <select id="labFilter" class="w-full py-3 bg-transparent text-gray-700 text-sm md:text-base outline-none cursor-pointer font-semibold appearance-none" disabled>
                         <option value="">Todos los laboratorios</option>
@@ -103,7 +105,6 @@
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex-grow">
                         <h4 class="text-spBlueDark font-extrabold text-sm"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-spWoodDark"></i> Resultados IA para: <span id="aiQueryText" class="text-spBlue"></span></h4>
-                        <p id="aiBrandsText" class="text-[11px] text-gray-600 mt-1 font-semibold opacity-80 leading-tight"></p>
                     </div>
                     <button onclick="clearAISearch()" class="text-spBlueDark hover:text-white hover:bg-spBlue bg-blue-50 rounded-lg w-8 h-8 flex items-center justify-center font-bold transition flex-shrink-0 shadow-sm border border-spBlue">
                         <i class="fa-solid fa-xmark"></i>
@@ -124,19 +125,19 @@
 
     <!-- Main Content -->
     <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-6">
-        <div id="statusContainer" class="flex flex-col items-center justify-center text-gray-500 my-16 gap-3 bg-white/60 backdrop-blur-sm p-10 rounded-3xl max-w-sm mx-auto shadow-sm border border-white/50">
+        <div id="statusContainer" class="flex flex-col items-center justify-center text-gray-500 my-16 gap-3 bg-white/60 backdrop-blur-md p-10 rounded-3xl max-w-sm mx-auto shadow-sm border border-white/50">
             <div class="loader"></div>
-            <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-400 font-normal">Leyendo Excel e ISP</span></span>
+            <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-500 font-normal">Leyendo inventario local</span></span>
         </div>
         <div class="flex justify-between items-center mb-4 hidden" id="resultsHeader">
-            <div class="text-sm text-gray-600 font-bold bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100" id="resultsCount"></div>
+            <div class="text-sm text-gray-600 font-bold bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-white/50" id="resultsCount"></div>
         </div>
         <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
         <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
     </main>
 
     <!-- Barra Flotante del Carrito -->
-    <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
+    <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex flex-col">
                 <span class="text-xs text-gray-500 font-bold uppercase">Total Cotización</span>
@@ -149,7 +150,7 @@
     </div>
 
     <!-- Modal del Carrito -->
-    <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end">
+    <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end backdrop-blur-sm">
         <div class="modal-content w-full md:w-[400px] bg-gray-50 h-full flex flex-col transform translate-x-full">
             <div class="bg-white px-5 py-4 flex justify-between items-center border-b border-gray-100 shadow-sm">
                 <h2 class="text-xl font-extrabold text-gray-800"><i class="fa-solid fa-receipt text-spBlueDark mr-2"></i> Tu Cotización</h2>
@@ -184,13 +185,26 @@
             <button onclick="closeAIModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
             <h3 class="text-xl font-black text-spBlueDark mb-1 text-center"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-spWoodDark"></i>Resultados IA</h3>
             <p class="text-sm text-center text-gray-500 font-semibold mb-5">Selecciona el nombre correcto del producto:</p>
-            <div id="aiSuggestionsList" class="flex flex-col gap-3"></div>
+            <div id="aiSuggestionsList" class="flex flex-col gap-3 max-h-80 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Modal Configuración API Key (Seguridad) -->
+    <div id="apiModal" class="fixed inset-0 bg-black/80 z-[90] hidden flex-col justify-center items-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
+            <button onclick="closeApiModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
+            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center"><i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA</h3>
+            <p class="text-sm text-gray-600 mb-4 text-center">Para usar el asistente inteligente, ingresa tu clave de Google Gemini. Se guardará de forma segura y encriptada en este navegador, nunca en GitHub.</p>
+            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark" placeholder="Pega tu API Key de Gemini aquí...">
+            <button onclick="saveApiKey()" class="w-full bg-spBlueDark hover:bg-spBlue text-white font-bold py-3 rounded-xl transition shadow-md">
+                Guardar Clave
+            </button>
         </div>
     </div>
 
     <script>
-        // RUTA DE TU EXCEL ALOJADO EN GITHUB (Renombra tu archivo a maestro.xlsx y súbelo)
-        const URL_EXCEL_MAESTRO = "maestro.xlsx?nocache=" + new Date().getTime();
+        // RUTA AL CSV LIGERO (Generado por tu script de Python)
+        const URL_CSV_MAESTRO = "Libro1.csv?nocache=" + new Date().getTime();
         
         // RUTAS DE GOOGLE SHEETS PARA BASES ESTÁTICAS
         const GID_EAN13 = "1436350776"; 
@@ -220,8 +234,32 @@
             cargarBasesDeDatos();
         };
 
+        // SISTEMA DE NOTIFICACIONES TOAST (Mejora de UX)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-spBlueDark';
+            const icon = type === 'error' ? 'fa-triangle-exclamation' : 'fa-check';
+            
+            toast.className = `${bgColor} text-white px-5 py-2.5 rounded-full shadow-lg transition-all duration-300 opacity-0 transform translate-y-4 flex items-center gap-2 text-sm font-semibold`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         async function cargarBasesDeDatos() {
-            // Lector de CSV
+            // Lector de CSV ultrarrápido
             const fetchCSV = (url) => new Promise((resolve) => {
                 try {
                     Papa.parse(url, {
@@ -235,34 +273,16 @@
                 }
             });
 
-            // Lector nativo de Excel
-            const fetchExcel = async (url) => {
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) return [];
-                    const arrayBuffer = await response.arrayBuffer();
-                    const data = new Uint8Array(arrayBuffer);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: "", raw: false}); 
-                    return json;
-                } catch (e) {
-                    console.error("Error leyendo Excel:", e);
-                    return [];
-                }
-            };
-
             // Cargar mapa de imágenes
             try {
                 const resJson = await fetch("imagenes_map.json?nocache=" + new Date().getTime());
                 if (resJson.ok) imagenesBD = await resJson.json();
             } catch (e) { console.log("Aún no hay banco de imágenes."); }
 
-            // Procesamiento de datos
+            // Procesamiento concurrente
             try {
                 const [maestroData, ean13Data, ispData] = await Promise.all([
-                    fetchExcel(URL_EXCEL_MAESTRO),
+                    fetchCSV(URL_CSV_MAESTRO),
                     fetchCSV(URL_CSV_EAN13),
                     fetchCSV(URL_CSV_ISP)
                 ]);
@@ -270,14 +290,9 @@
             } catch (error) {
                 console.error("Error crítico cargando datos:", error);
                 document.getElementById('statusContainer').innerHTML = `
-                    <div class="text-red-500 text-center flex flex-col items-center justify-center p-6 bg-red-50 rounded-2xl border border-red-100 max-w-md mx-auto">
-                        <i class="fa-solid fa-wifi text-5xl mb-4 text-red-400"></i>
-                        <h3 class="font-black text-xl mb-2">Error de Sistema</h3>
-                        <p class="text-sm font-medium text-red-800 leading-snug">
-                            No se pudo ejecutar la aplicación.<br><br>
-                            Asegúrate de haber subido tu archivo <b>maestro.xlsx</b> a GitHub.
-                        </p>
-                    </div>
+                    <i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i>
+                    <h3 class="font-black text-xl text-red-500">Error de Sistema</h3>
+                    <p class="text-sm font-medium text-gray-600 leading-snug">No se pudo leer el archivo Libro1.csv.<br>Asegúrate de ejecutar tu script de actualización.</p>
                 `;
             }
         }
@@ -293,72 +308,23 @@
                 .trim();
         }
 
-        function clearAISearch() {
-            activeAISearchTerms = [];
-            document.getElementById('aiActiveBanner').classList.add('hidden');
-            const searchInput = document.getElementById('searchInput');
-            searchInput.value = "";
-            searchInput.placeholder = "Nombre, síntoma o componente...";
-            
-            const btnWand = document.getElementById('btnWand');
-            btnWand.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-lg"></i>';
-            btnWand.classList.remove('bg-red-500', 'hover:bg-red-600');
-            btnWand.classList.add('bg-spBlueDark', 'hover:bg-spBlue');
-            btnWand.title = "Búsqueda Inteligente (Síntomas)";
-            currentPage = 1;
-            applyFilters();
-        }
-
-        function setCompoundFilter(type) {
-            compoundFilter = type;
-            const btnAll = document.getElementById('btnFilterAll');
-            const btnMono = document.getElementById('btnFilterMono');
-            const btnComp = document.getElementById('btnFilterComp');
-            
-            const activeClass = "bg-white text-spBlueDark shadow-sm".split(" ");
-            const inactiveClass = "text-white hover:bg-white/20".split(" ");
-            
-            [btnAll, btnMono, btnComp].forEach(btn => {
-                btn.classList.remove(...activeClass);
-                btn.classList.add(...inactiveClass);
-            });
-
-            if(type === 'all') { btnAll.classList.remove(...inactiveClass); btnAll.classList.add(...activeClass); }
-            if(type === 'mono') { btnMono.classList.remove(...inactiveClass); btnMono.classList.add(...activeClass); }
-            if(type === 'comp') { btnComp.classList.remove(...inactiveClass); btnComp.classList.add(...activeClass); }
-
-            currentPage = 1;
-            applyFilters();
-        }
-
         function procesarDatos(rawDataMaestro, rawDataEan, rawDataIsp) {
             
-            let headerRowIndex = -1; 
-            let lastUpdateStr = "(Stock de hoy)";
-            
-            for (let i = 0; i < Math.min(20, rawDataMaestro.length); i++) {
-                if (!rawDataMaestro[i]) continue;
-                rawDataMaestro[i].forEach(cell => {
-                    let textCell = String(cell).trim();
-                    if (textCell.toLowerCase().includes('fecha')) { lastUpdateStr = textCell; }
-                });
+            // Buscar la cabecera (incluso si el script de Python ya limpió el CSV)
+            let headerRowIndex = 0; 
+            for (let i = 0; i < Math.min(5, rawDataMaestro.length); i++) {
                 let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
-                if (rowStr.includes("LAB") && (rowStr.includes("DETALLE") || rowStr.includes("PRECIO"))) { 
+                if (rowStr.includes("LAB") && rowStr.includes("PRECIO")) { 
                     headerRowIndex = i; 
                     break; 
                 }
             }
 
-            if (headerRowIndex === -1) {
+            if (rawDataMaestro.length === 0) {
                 document.getElementById('statusContainer').innerHTML = `
-                    <div class="text-red-500 text-center flex flex-col items-center justify-center p-6 bg-red-50 rounded-2xl border border-red-100 max-w-md mx-auto">
-                        <i class="fa-solid fa-triangle-exclamation text-5xl mb-4 text-red-400"></i>
-                        <h3 class="font-black text-xl mb-2">¡Catálogo No Encontrado!</h3>
-                        <p class="text-sm font-medium text-red-800 leading-snug">
-                            No se encontró un archivo Excel válido.<br><br>
-                            Asegúrate de exportar desde tu sistema, renombrarlo como <b>maestro.xlsx</b> y subirlo a GitHub.
-                        </p>
-                    </div>
+                    <i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i>
+                    <h3 class="font-black text-xl text-red-500">Catálogo Vacío</h3>
+                    <p class="text-sm font-medium text-gray-600 leading-snug">Sube el archivo Libro1.csv a la carpeta de tu servidor.</p>
                 `;
                 return;
             }
@@ -403,7 +369,6 @@
 
                     if (nombreComercialISP && principioOficialISP) {
                         ispMapExacto[nombreComercialISP] = principioOficialISP;
-                        
                         let nombreLimpio = limpiarTextoFarma(nombreComercialISP);
                         if (nombreLimpio && nombreLimpio.length >= 3) {
                             ispMapLimpio[nombreLimpio] = principioOficialISP;
@@ -443,13 +408,9 @@
                         let p2 = palabras.length > 1 ? p1 + ' ' + palabras[1] : null;
                         let p3 = palabras.length > 2 ? p2 + ' ' + palabras[2] : null;
 
-                        if (p3 && ispMapLimpio[p3]) {
-                            principioEncontrado = ispMapLimpio[p3];
-                        } else if (p2 && ispMapLimpio[p2]) {
-                            principioEncontrado = ispMapLimpio[p2];
-                        } else if (p1 && p1.length >= 4 && ispMapLimpio[p1]) {
-                            principioEncontrado = ispMapLimpio[p1];
-                        }
+                        if (p3 && ispMapLimpio[p3]) { principioEncontrado = ispMapLimpio[p3]; } 
+                        else if (p2 && ispMapLimpio[p2]) { principioEncontrado = ispMapLimpio[p2]; } 
+                        else if (p1 && p1.length >= 4 && ispMapLimpio[p1]) { principioEncontrado = ispMapLimpio[p1]; }
                     }
                 }
 
@@ -501,9 +462,6 @@
                 labFilter.appendChild(opt);
             });
 
-            const dateSpan = document.getElementById('fechaActualizacion');
-            if (dateSpan) dateSpan.innerText = lastUpdateStr;
-
             document.getElementById('statusContainer').style.display = 'none';
             document.getElementById('resultsHeader').classList.remove('hidden');
             
@@ -516,13 +474,12 @@
         function applyFilters() {
             const rawSearchInput = document.getElementById('searchInput').value.toLowerCase().trim();
             const terms = rawSearchInput === "" ? [] : rawSearchInput.replace(/\+/g, ' ').split(/\s+/);
-            
             const selectedLab = document.getElementById('labFilter').value;
 
             filteredProducts = allProducts.filter(p => {
                 const searchable = `${p.nombre} ${p.lab} ${p.principio} ${p.barcode}`.toLowerCase();
-
                 let textMatch = false;
+                
                 if (activeAISearchTerms.length > 0) {
                     let matchIA = activeAISearchTerms.some(cleanTerm => {
                         try {
@@ -544,8 +501,8 @@
                 }
                 
                 const labMatch = selectedLab === "" ? true : p.lab === selectedLab;
-                
                 let compoundMatch = true;
+                
                 if (compoundFilter !== 'all') {
                     const isCompound = String(p.principio || "").includes('+');
                     if (compoundFilter === 'mono') compoundMatch = !isCompound;
@@ -567,7 +524,7 @@
             grid.innerHTML = '';
 
             if (totalItems === 0) {
-                grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-400"><i class="fa-solid fa-pills text-5xl mb-4 text-gray-300"></i><p class="text-lg">No encontramos resultados para esta búsqueda.</p></div>`;
+                grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500 bg-white/60 backdrop-blur-md rounded-3xl max-w-lg mx-auto shadow-sm border border-white/50"><i class="fa-solid fa-pills text-5xl mb-4 text-spBlueDark/50"></i><p class="text-lg font-bold">No encontramos resultados.</p></div>`;
                 document.getElementById('pagination').innerHTML = '';
                 return;
             }
@@ -579,17 +536,17 @@
                 const qtyInCart = cartItem ? cartItem.cantidad : 0;
                 
                 const card = document.createElement('div');
-                card.className = `bg-white/80 backdrop-blur-md rounded-2xl p-5 shadow-sm border border-white/50 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
+                card.className = `bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-sm border border-white/60 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
                 
                 let stockBadge = item.disponible 
                     ? `<span class="bg-blue-50 text-spBlueDark px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>`
                     : `<span class="bg-red-50 text-red-500 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
 
                 let btnHtml = item.disponible 
-                    ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-spBlue text-white hover:bg-spBlueDark border border-spBlueDark font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
+                    ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-plus"></i> Agregar
                        </button>`
-                    : `<button disabled class="w-full mt-4 bg-gray-50 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-100">Sin Stock</button>`;
+                    : `<button disabled class="w-full mt-4 bg-gray-100 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-200">Sin Stock</button>`;
 
                 if(qtyInCart > 0) {
                     btnHtml = `
@@ -618,7 +575,7 @@
                 } else {
                     let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
                     imagenHtml = `
-                    <div class="w-full h-32 flex items-center justify-center bg-gray-50/50 border border-gray-100 rounded-xl mb-3">
+                    <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3">
                         <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
                     </div>`;
                 }
@@ -643,18 +600,32 @@
             renderPagination(totalPages);
         }
 
-        function addToCart(id, nombre, precio) { cart.push({ id, nombre, precio, cantidad: 1 }); updateCartUI(); renderPage(); }
+        function addToCart(id, nombre, precio) { 
+            cart.push({ id, nombre, precio, cantidad: 1 }); 
+            updateCartUI(); 
+            renderPage(); 
+            showToast("Producto agregado");
+        }
 
         function updateQty(id, change) {
             let itemIndex = cart.findIndex(c => c.id === id);
             if(itemIndex > -1) {
                 cart[itemIndex].cantidad += change;
-                if(cart[itemIndex].cantidad <= 0) cart.splice(itemIndex, 1);
+                if(cart[itemIndex].cantidad <= 0) {
+                    cart.splice(itemIndex, 1);
+                    showToast("Producto eliminado", "error");
+                }
             }
             updateCartUI(); renderPage(); renderCartModal(); 
         }
 
-        function clearCart() { if(confirm("¿Deseas vaciar tu cotización?")) { cart = []; updateCartUI(); renderPage(); toggleCart(); } }
+        function clearCart() { 
+            cart = []; 
+            updateCartUI(); 
+            renderPage(); 
+            toggleCart(); 
+            showToast("Cotización vaciada", "error");
+        }
 
         function updateCartUI() {
             const floatingCart = document.getElementById('floatingCart');
@@ -716,14 +687,18 @@
 
             const createBtn = (html, disabled, onClick) => {
                 const b = document.createElement('button'); b.innerHTML = html; b.disabled = disabled; b.onclick = onClick;
-                b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${disabled ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white' : 'text-spBlueDark border-spBlueDark hover:bg-spBlue hover:text-white bg-white'}`;
+                b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${disabled ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50 backdrop-blur-sm' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white/80 backdrop-blur-sm shadow-sm'}`;
                 return b;
             };
 
             container.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
-            const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; container.appendChild(info);
+            const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white/80 backdrop-blur-sm py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; container.appendChild(info);
             container.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
         }
+
+        // ==========================================
+        // LÓGICA DE ESCÁNER
+        // ==========================================
 
         function startScanner() {
             const modal = document.getElementById('scannerModal');
@@ -742,7 +717,7 @@
                 },
                 (errorMessage) => {}
             ).catch(err => {
-                alert("Error al acceder a la cámara. Asegúrate de dar los permisos correspondientes.");
+                showToast("Error al acceder a la cámara", "error");
                 stopScanner();
             });
         }
@@ -756,8 +731,42 @@
             }
         }
 
-        // ¡ACTUALIZA TU API KEY AQUÍ!
-        const GEMINI_API_KEY = "AQ.Ab8RN6KZs-NasdJEA3H0kCFyPEzLUC84R8nlZ0ecBgeJ3lwIWQ"; 
+        // ==========================================
+        // GESTIÓN SEGURA DE API KEY DE GEMINI
+        // ==========================================
+
+        function getApiKey() {
+            return localStorage.getItem('gemini_api_key');
+        }
+
+        function openApiModal() {
+            document.getElementById('apiModal').classList.remove('hidden');
+            document.getElementById('apiModal').classList.add('flex');
+            
+            // Si ya hay una key guardada, mostrar que existe (oculta)
+            const currentKey = getApiKey();
+            if (currentKey) {
+                document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4);
+            }
+        }
+
+        function closeApiModal() {
+            document.getElementById('apiModal').classList.add('hidden');
+            document.getElementById('apiModal').classList.remove('flex');
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput').value.trim();
+            if(input && !input.startsWith('****')) {
+                localStorage.setItem('gemini_api_key', input);
+                showToast("Clave guardada con éxito");
+            }
+            closeApiModal();
+        }
+
+        // ==========================================
+        // INTELIGENCIA ARTIFICIAL (GEMINI)
+        // ==========================================
 
         async function smartAISearch() {
             const input = document.getElementById('searchInput');
@@ -770,19 +779,21 @@
 
             const query = input.value.trim();
             if(!query) {
-                alert("Escribe qué estás buscando primero (ej: 'Resfriado' o 'Dolor de guata').");
+                showToast("Escribe qué estás buscando primero", "error");
                 return;
             }
 
-            if(!GEMINI_API_KEY) {
-                alert("La API Key no está configurada."); return;
+            const apiKey = getApiKey();
+            if(!apiKey) {
+                openApiModal();
+                return;
             }
 
             const originalText = input.value;
             input.disabled = true;
             input.value = "IA pensando...";
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
             
             const payload = {
                 contents: [{
@@ -799,7 +810,7 @@
                 input.disabled = false;
 
                 if (data.error) {
-                    alert("Error de Google: " + data.error.message);
+                    showToast("Error de Google: API Key inválida", "error");
                     input.value = originalText;
                     return;
                 }
@@ -808,32 +819,49 @@
                     let aiText = data.candidates[0].content.parts[0].text.trim().replace(/```json/gi, '').replace(/```/g, '').trim();
                     try {
                         const rawTerms = JSON.parse(aiText);
-                        
                         activeAISearchTerms = rawTerms.map(term => term.trim()).filter(term => term.length >= 3);
                         
                         input.value = "";
-                        input.placeholder = `✨ IA activa para: "${originalText}". Escribe para filtrar...`;
+                        input.placeholder = `✨ IA activa para: "${originalText}".`;
                         
                         btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>';
                         btnWand.classList.remove('bg-spBlueDark', 'hover:bg-spBlue');
                         btnWand.classList.add('bg-red-500', 'hover:bg-red-600');
                         btnWand.title = "Apagar Inteligencia Artificial";
+                        document.getElementById('aiActiveBanner').classList.remove('hidden');
+                        document.getElementById('aiQueryText').innerText = originalText;
 
                         currentPage = 1;
                         applyFilters();
 
                     } catch (e) {
                         console.error("Error parseando resultados de IA:", e);
-                        alert("La IA devolvió un formato incorrecto.");
+                        showToast("La IA devolvió un formato incorrecto.", "error");
                         input.value = originalText;
                     }
                 }
             } catch(e) { 
                 console.error(e); 
-                alert("Error de red al conectar con IA.");
+                showToast("Error de red al conectar con IA.", "error");
                 input.disabled = false;
                 input.value = originalText;
             }
+        }
+
+        function clearAISearch() {
+            activeAISearchTerms = [];
+            document.getElementById('aiActiveBanner').classList.add('hidden');
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = "";
+            searchInput.placeholder = "Nombre, síntoma o componente...";
+            
+            const btnWand = document.getElementById('btnWand');
+            btnWand.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-lg"></i>';
+            btnWand.classList.remove('bg-red-500', 'hover:bg-red-600');
+            btnWand.classList.add('bg-spBlueDark', 'hover:bg-spBlue');
+            btnWand.title = "Búsqueda Inteligente (Síntomas)";
+            currentPage = 1;
+            applyFilters();
         }
 
         function triggerAICamera() {
@@ -863,6 +891,12 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            const apiKey = getApiKey();
+            if(!apiKey) {
+                openApiModal();
+                return;
+            }
+
             const searchInput = document.getElementById('searchInput');
             searchInput.disabled = true;
             searchInput.value = "Procesando imagen con IA...";
@@ -881,29 +915,21 @@
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                     const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                    callGeminiCameraAPI(base64Image);
+                    callGeminiCameraAPI(base64Image, apiKey);
                 }
                 img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         }
 
-        async function callGeminiCameraAPI(base64Image) {
+        async function callGeminiCameraAPI(base64Image, apiKey) {
             const input = document.getElementById('searchInput');
-
-            if(!GEMINI_API_KEY) {
-                alert("Primero debes ingresar tu API Key de Gemini en el código fuente.");
-                input.value = "";
-                input.disabled = false;
-                return;
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
             
             const payload = {
                 contents: [{
                     parts: [
-                        { text: "Eres un experto farmacéutico analizando el empaque de un producto (puede ser medicamento, cosmético, dermocosmética o insumo). Extrae el nombre comercial principal. Dame de 3 a 5 variaciones probables. Responde ÚNICAMENTE con un array en formato JSON puro, sin explicaciones. Ejemplo estricto: [\"U.CARE\", \"U CARE CREMA\", \"U.CARE CUERPO\"]" },
+                        { text: "Eres un experto farmacéutico analizando el empaque de un producto. Extrae el nombre comercial principal. Dame de 3 a 5 variaciones probables. Responde ÚNICAMENTE con un array en formato JSON puro, sin explicaciones. Ejemplo estricto: [\"U.CARE\", \"U CARE CREMA\", \"U.CARE CUERPO\"]" },
                         { inlineData: { mimeType: "image/jpeg", data: base64Image } }
                     ]
                 }]
@@ -920,7 +946,7 @@
                 input.disabled = false;
 
                 if (data.error) {
-                    alert("Error de Google: " + data.error.message);
+                    showToast("Error de Google: " + data.error.message, "error");
                     input.value = "";
                     return;
                 }
@@ -963,15 +989,15 @@
                     }
 
                 } else if (data.promptFeedback) {
-                    alert("Google bloqueó el análisis de esta imagen por sus filtros de seguridad.");
+                    showToast("Google bloqueó el análisis de esta imagen.", "error");
                     input.value = "";
                 } else {
-                    alert("La IA procesó la imagen pero no devolvió un nombre válido.");
+                    showToast("La IA no devolvió un nombre válido.", "error");
                     input.value = "";
                 }
             } catch (error) {
                 console.error("Error AI:", error);
-                alert("Error de red al conectar con la IA. Revisa el internet.");
+                showToast("Error de red al conectar con la IA.", "error");
                 input.value = "";
                 input.disabled = false;
             }
