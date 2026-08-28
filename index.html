@@ -261,17 +261,18 @@
         async function cargarBasesDeDatos() {
             // Lector de CSV ultrarrápido
             const fetchCSV = (url) => new Promise((resolve) => {
-                try {
-                    Papa.parse(url, {
-                        download: true,
-                        header: false,
-                        complete: (results) => resolve(results.data),
-                        error: (err) => resolve([]) 
-                    });
-                } catch(e) {
-                    resolve([]);
-                }
-            });
+    try {
+        Papa.parse(url, {
+            download: true,
+            header: false,
+            delimiter: ";", // <-- ¡AGREGA ESTA LÍNEA AQUÍ!
+            complete: (results) => resolve(results.data),
+            error: (err) => resolve([]) 
+        });
+    } catch(e) {
+        resolve([]);
+    }
+});
 
             // Cargar mapa de imágenes
             try {
