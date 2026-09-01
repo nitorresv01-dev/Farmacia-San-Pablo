@@ -305,6 +305,21 @@
 
             // Procesamiento concurrente
             try {
+                const [maestroData, ean13Data, ispData] = await Promise.all([
+                    fetchCSV(URL_CSV_MAESTRO),
+                    fetchCSV(URL_CSV_EAN13),
+                    fetchCSV(URL_CSV_ISP)
+                ]);
+                procesarDatos(maestroData, ean13Data, ispData);
+            } catch (error) {
+                console.error("Error crítico cargando datos:", error);
+                document.getElementById('statusContainer').innerHTML = `
+                    <i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i>
+                    <h3 class="font-black text-xl text-red-500">Error de Sistema</h3>
+                    <p class="text-sm font-medium text-gray-600 leading-snug">No se pudo leer el archivo Libro1.csv.<br>Asegúrate de ejecutar tu script de actualización.</p>
+                `;
+            }
+        }
 
         function limpiarTextoFarma(texto) {
             if(!texto) return "";
