@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
@@ -36,6 +37,7 @@
 </head>
 <body class="flex flex-col min-h-screen pb-24 bg-fixed bg-center bg-cover" style="background-image: linear-gradient(rgba(255, 255, 255, 0.65), rgba(244, 247, 246, 0.95)), url('fondo-farmacia.jpg');">
     
+    <!-- Sistema de Notificaciones Toast -->
     <div id="toastContainer" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Header -->
@@ -54,7 +56,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-4 text-sm font-semibold text-gray-500">
-                <!-- Ícono de Ajustes IA restaurado -->
                 <button onclick="openApiModal()" class="text-gray-400 hover:text-spBlue transition" title="Configurar Inteligencia Artificial">
                     <i class="fa-solid fa-gear text-lg"></i>
                 </button>
@@ -90,7 +91,9 @@
                 </div>
                 <div class="w-full md:w-2/3 flex items-center px-2 relative">
                     <i class="fa-solid fa-magnifying-glass text-gray-400 text-xl mr-2"></i>
+                    
                     <input type="text" id="searchInput" class="w-full py-3 pr-36 text-base md:text-lg outline-none text-gray-700 bg-transparent placeholder-gray-400" placeholder="Nombre, síntoma o componente..." autocomplete="off" disabled>
+                    
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
                         <button id="btnWand" onclick="smartAISearch()" class="bg-spBlueDark text-white w-10 h-10 rounded-xl hover:bg-spBlue shadow-md transition flex items-center justify-center" title="Búsqueda Inteligente (Síntomas)">
                             <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
@@ -106,6 +109,7 @@
                 </div>
             </div>
 
+            <!-- Banner de IA Activa -->
             <div id="aiActiveBanner" class="hidden mt-4 bg-white/95 backdrop-blur-sm border border-spBlue rounded-xl p-3 text-left shadow-lg relative z-20 transition-all duration-300">
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex-grow">
@@ -153,7 +157,7 @@
         <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
     </main>
 
-    <!-- Barra Flotante y Modales... -->
+    <!-- Barra Flotante del Carrito -->
     <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex flex-col">
@@ -166,6 +170,7 @@
         </div>
     </div>
 
+    <!-- Modal del Carrito -->
     <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end backdrop-blur-sm">
         <div class="modal-content w-full md:w-[400px] bg-gray-50 h-full flex flex-col transform translate-x-full">
             <div class="bg-white px-5 py-4 flex justify-between items-center border-b border-gray-100 shadow-sm">
@@ -185,6 +190,7 @@
         </div>
     </div>
 
+    <!-- Modal del Escáner -->
     <div id="scannerModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-5 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="stopScanner()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -194,7 +200,7 @@
         </div>
     </div>
 
-    <!-- Modal Resultados IA -->
+    <!-- Modal de Resultados IA -->
     <div id="aiModal" class="fixed inset-0 bg-black/80 z-[80] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="closeAIModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -230,22 +236,21 @@
 
     <script>
         // ==========================================
-        // 🔒 CONTRASEÑA MAESTRA DE SEGURIDAD
+        // 🔑 CONFIGURACIÓN Y VARIABLES GLOBALES
         // ==========================================
-        const PASSWORD_ACCESO = "sanpablo2026"; // Cambia esta contraseña si lo deseas
+        const CLAVE_GEMINI = ""; // Deja esto en blanco. La clave se pondrá desde la web.
+        const PASSWORD_ACCESO = "sanpablo2026"; // Contraseña de seguridad de la farmacia
 
         const URL_CSV_MAESTRO = "Libro1.csv?nocache=" + new Date().getTime();
-        const GID_EAN13 = "1436350776"; 
-        const URL_CSV_EAN13 = "https://docs.google.com/spreadsheets/d/1GjVV8vuErPNmOIVkP-pk6VPiTrlf4IQby2v-OS0J3Zg/export?format=csv&gid=" + GID_EAN13 + "&nocache=" + new Date().getTime();
-        const GID_ISP = "123869210"; 
-        const URL_CSV_ISP = "https://docs.google.com/spreadsheets/d/1GjVV8vuErPNmOIVkP-pk6VPiTrlf4IQby2v-OS0J3Zg/export?format=csv&gid=" + GID_ISP + "&nocache=" + new Date().getTime();
         
         let allProducts = [];
         let filteredProducts = [];
         let cart = [];
+        let imagenesBD = {}; // Diccionario para fotos manuales (imagenes_map.json)
         let currentPage = 1;
         const itemsPerPage = 24;
         const clpFmt = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
+        
         let html5QrcodeScanner = null;
         let compoundFilter = 'all'; 
         let activeAISearchTerms = [];
@@ -262,75 +267,16 @@
             const toast = document.createElement('div');
             const bgColor = type === 'error' ? 'bg-red-500' : 'bg-spBlueDark';
             const icon = type === 'error' ? 'fa-triangle-exclamation' : 'fa-check';
-            
             toast.className = `${bgColor} text-white px-5 py-2.5 rounded-full shadow-lg transition-all duration-300 opacity-0 transform translate-y-4 flex items-center gap-2 text-sm font-semibold`;
             toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
             container.appendChild(toast);
-            
             setTimeout(() => { toast.classList.remove('opacity-0', 'translate-y-4'); toast.classList.add('opacity-100', 'translate-y-0'); }, 10);
             setTimeout(() => { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-4'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         // ==========================================
-        // GESTIÓN SEGURA DE API KEY (LOCALSTORAGE)
+        // CARGA DE DATOS ULTRARRÁPIDA (Lectura Local)
         // ==========================================
-        function getApiKey() {
-            return localStorage.getItem('gemini_api_key');
-        }
-
-        function openApiModal() {
-            document.getElementById('apiConfigModal').classList.remove('hidden');
-            document.getElementById('apiConfigModal').classList.add('flex');
-            
-            // Si ya hay una clave guardada, mostrarla ofuscada
-            const currentKey = getApiKey();
-            if (currentKey) {
-                document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4);
-            }
-            // Limpiar la contraseña siempre por seguridad
-            document.getElementById('apiPasswordInput').value = "";
-        }
-
-        function closeApiModal() {
-            document.getElementById('apiConfigModal').classList.add('hidden');
-            document.getElementById('apiConfigModal').classList.remove('flex');
-        }
-
-        function saveApiKey() {
-            const passInput = document.getElementById('apiPasswordInput').value;
-            
-            // Verificación de la contraseña del local
-            if (passInput !== PASSWORD_ACCESO) {
-                showToast("Contraseña de autorización incorrecta", "error");
-                return;
-            }
-
-            const keyInput = document.getElementById('apiKeyInput').value.trim();
-            if (keyInput && !keyInput.startsWith('****')) {
-                localStorage.setItem('gemini_api_key', keyInput);
-                showToast("Clave sellada y guardada con éxito");
-            } else if (keyInput.startsWith('****')) {
-                showToast("Autenticación correcta. Manteniendo clave anterior.");
-            }
-            closeApiModal();
-        }
-
-        // ==========================================
-        // FILTROS Y PROCESAMIENTO
-        // ==========================================
-        function setCompoundFilter(type) {
-            compoundFilter = type;
-            const activeClass = "px-3 md:px-5 py-2 rounded-lg bg-white/90 text-spBlueDark shadow-sm transition-all duration-300 border border-white";
-            const inactiveClass = "px-3 md:px-5 py-2 rounded-lg text-gray-700 hover:text-spBlueDark hover:bg-white/40 transition-all duration-300";
-            
-            document.getElementById('btnFilterAll').className = type === 'all' ? activeClass : inactiveClass;
-            document.getElementById('btnFilterMono').className = type === 'mono' ? activeClass : inactiveClass;
-            document.getElementById('btnFilterComp').className = type === 'comp' ? activeClass : inactiveClass;
-            
-            currentPage = 1;
-            applyFilters();
-        }
-
         async function cargarBasesDeDatos() {
             const fetchCSV = (url) => new Promise((resolve) => {
                 try {
@@ -338,6 +284,7 @@
                 } catch(e) { resolve([]); }
             });
 
+            // 1. Cargar Fecha de Actualización
             try {
                 const resMeta = await fetch("metadata.json?nocache=" + new Date().getTime());
                 if (resMeta.ok) {
@@ -346,85 +293,82 @@
                 }
             } catch (e) { document.getElementById('fechaActualizacion').innerText = "No disponible"; }
 
+            // 2. Cargar diccionario manual de fotos
             try {
-                const [maestroData, ean13Data, ispData] = await Promise.all([
-                    fetchCSV(URL_CSV_MAESTRO), fetchCSV(URL_CSV_EAN13), fetchCSV(URL_CSV_ISP)
-                ]);
-                procesarDatos(maestroData, ean13Data, ispData);
+                const resImg = await fetch("imagenes_map.json?nocache=" + new Date().getTime());
+                if (resImg.ok) { imagenesBD = await resImg.json(); }
+            } catch (e) { console.log("Aún no hay banco de imágenes manual."); }
+
+            // 3. Cargar inventario local (maestro procesado)
+            try {
+                const maestroData = await fetchCSV(URL_CSV_MAESTRO);
+                procesarDatos(maestroData);
             } catch (error) {
                 document.getElementById('statusContainer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i><h3 class="font-black text-xl text-red-500">Error de Sistema</h3><p class="text-sm font-medium text-gray-600">No se pudo leer Libro1.csv.</p>`;
             }
         }
 
-        function limpiarTextoFarma(texto) {
-            if(!texto) return "";
-            return texto.toUpperCase().replace(/\([^)]*\)/g, '').replace(/\b[0-9]+([.,][0-9]+)?\s*(MG|ML|GR|G|MCG|UI|U|UI\/ML|%|L|KG)\b/gi, '').replace(/\b(COMP|COMPRIMIDO|COMPRIMIDOS|RECUBIERTO|RECUBIERTOS|JBE|JARABE|CAPS|CAPSULAS|SUSP|SUSPENSION|SOL|SOLUCION|GTS|GOTAS|SOBRES|INY|INYECTABLE|CREMA|POMADA|UNG|OVULOS|AMP|FCO|TAB|PILD|CM|REC|FORTE|PLUS)\b/gi, '').replace(/[^A-Z \s]/g, ' ').replace(/\s+/g, ' ').trim();
+        // Filtro de asociación
+        function setCompoundFilter(type) {
+            compoundFilter = type;
+            const activeClass = "px-3 md:px-5 py-2 rounded-lg bg-white/90 text-spBlueDark shadow-sm transition-all duration-300 border border-white";
+            const inactiveClass = "px-3 md:px-5 py-2 rounded-lg text-gray-700 hover:text-spBlueDark hover:bg-white/40 transition-all duration-300";
+            document.getElementById('btnFilterAll').className = type === 'all' ? activeClass : inactiveClass;
+            document.getElementById('btnFilterMono').className = type === 'mono' ? activeClass : inactiveClass;
+            document.getElementById('btnFilterComp').className = type === 'comp' ? activeClass : inactiveClass;
+            currentPage = 1;
+            applyFilters();
         }
 
-        function procesarDatos(rawDataMaestro, rawDataEan, rawDataIsp) {
-            let headerRowIndex = 0; 
+        function procesarDatos(rawDataMaestro) {
+            let headerRowIndex = -1; 
             for (let i = 0; i < Math.min(5, rawDataMaestro.length); i++) {
                 let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
                 if (rowStr.includes("LAB") && rowStr.includes("PRECIO")) { headerRowIndex = i; break; }
             }
 
-            if (rawDataMaestro.length === 0) {
+            if (headerRowIndex === -1 || rawDataMaestro.length === 0) {
                 document.getElementById('statusContainer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i><h3 class="font-black text-xl text-red-500">Catálogo Vacío</h3>`;
                 return;
             }
 
-            let barcodeMap = {};
-            if (rawDataEan && rawDataEan.length > 0 && rawDataEan.some(row => row && String(row[0]).toUpperCase().includes("EAN_13"))) {
-                for (let i = 1; i < rawDataEan.length; i++) { 
-                    if (!rawDataEan[i] || rawDataEan[i].length < 2) continue;
-                    let ean = String(rawDataEan[i][0]).trim(), codi = String(rawDataEan[i][1]).trim();
-                    if (ean && codi) { if (!barcodeMap[codi]) barcodeMap[codi] = []; barcodeMap[codi].push(ean); }
-                }
-            }
-
-            let ispMapExacto = {}, ispMapLimpio = {};
-            if (rawDataIsp && rawDataIsp.length > 0) {
-                for (let i = 1; i < rawDataIsp.length; i++) { 
-                    if (!rawDataIsp[i] || rawDataIsp[i].length <= 3) continue;
-                    let nombreComercialISP = String(rawDataIsp[i][1]).trim().toUpperCase();
-                    let principioOficialISP = String(rawDataIsp[i][3]).trim().toUpperCase();
-                    
-                    if (!principioOficialISP && nombreComercialISP.includes('(')) {
-                        let match = nombreComercialISP.match(/\(([^)]+)\)/);
-                        if (match) principioOficialISP = match[1].trim(); 
-                    }
-                    if (nombreComercialISP && principioOficialISP) {
-                        ispMapExacto[nombreComercialISP] = principioOficialISP;
-                        let nombreLimpio = limpiarTextoFarma(nombreComercialISP);
-                        if (nombreLimpio && nombreLimpio.length >= 3) ispMapLimpio[nombreLimpio] = principioOficialISP;
-                    }
-                }
-            }
+            // Identificar dinámicamente en qué columna está cada dato
+            let headers = rawDataMaestro[headerRowIndex].map(c => String(c).toUpperCase());
+            let idxLab = headers.indexOf("LAB");
+            let idxCodbarra = headers.indexOf("CODBARRA");
+            let idxDetalle = headers.indexOf("DETALLE");
+            let idxPrecio = headers.indexOf("PRECIO");
+            let idxStock = headers.indexOf("STOCK");
+            let idxPrincipio = headers.indexOf("PRINCIPIO_ACTIVO");
+            let idxCvSku = headers.indexOf("CV_SKU");
 
             let tempProducts = [];
             for (let i = headerRowIndex + 1; i < rawDataMaestro.length; i++) {
                 const row = rawDataMaestro[i];
-                if (!row || row.length < 8) continue;
+                if (!row || row.length < headers.length) continue;
 
-                let precio = parseInt(typeof row[7] === 'string' ? row[7].replace(/[^0-9]/g, '') : row[7]);
-                let stock = parseInt(row[10]) || 0;
-                let labName = String(row[0]).trim(), codigoInterno = String(row[2]).trim(), codigoBarrasBase = row[3] ? String(row[3]).trim() : "";
-                let nombre = String(row[4]).trim(), nombreLimpioMaestro = limpiarTextoFarma(nombre.toUpperCase());
+                let precioStr = typeof row[idxPrecio] === 'string' ? row[idxPrecio].replace(/[^0-9]/g, '') : row[idxPrecio];
+                let precio = parseInt(precioStr);
+                let stock = parseInt(row[idxStock]) || 0;
+                let labName = idxLab > -1 ? String(row[idxLab]).trim() : "";
+                let codigoBarras = idxCodbarra > -1 ? String(row[idxCodbarra]).trim() : "";
+                let nombre = idxDetalle > -1 ? String(row[idxDetalle]).trim() : "";
                 
-                let principioActivo = row[12] ? String(row[12]).trim() : "", principioEncontrado = ispMapExacto[nombre.toUpperCase()] || ispMapLimpio[nombreLimpioMaestro];
-                if (!principioEncontrado) {
-                    let palabras = nombreLimpioMaestro.split(' ');
-                    if (palabras.length > 0) {
-                        let p1 = palabras[0], p2 = palabras.length > 1 ? p1 + ' ' + palabras[1] : null, p3 = palabras.length > 2 ? p2 + ' ' + palabras[2] : null;
-                        principioEncontrado = (p3 && ispMapLimpio[p3]) ? ispMapLimpio[p3] : (p2 && ispMapLimpio[p2]) ? ispMapLimpio[p2] : (p1 && p1.length >= 4 && ispMapLimpio[p1]) ? ispMapLimpio[p1] : "";
-                    }
-                }
-
-                let principioNormalizado = (principioEncontrado || principioActivo).replace(/\s*\/\/\s*|\s*\/\s*|\s*-\s*|\s*;\s*|\s*,\s*|\s+\by\b\s+|\s+\be\b\s+|\s*&\s*|\s*\+\s*\+/gi, ' + ').trim().replace(/^\+\s*|\s*\+$/g, '');
-                let todosLosCodigos = barcodeMap[codigoInterno] ? codigoBarrasBase + " " + barcodeMap[codigoInterno].join(" ") : codigoBarrasBase;
+                // Las columnas inteligentes añadidas por nuestro Python
+                let principioNormalizado = (idxPrincipio > -1 && row[idxPrincipio]) ? String(row[idxPrincipio]).trim() : "";
+                let cvSku = (idxCvSku > -1 && row[idxCvSku]) ? String(row[idxCvSku]).trim() : "";
 
                 if (nombre && !isNaN(precio) && precio > 0) {
-                    tempProducts.push({ id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i, lab: labName, nombre: nombre, precio: precio, principio: principioNormalizado, barcode: todosLosCodigos.trim(), disponible: stock > 0 });
+                    tempProducts.push({ 
+                        id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i, 
+                        lab: labName, 
+                        nombre: nombre, 
+                        precio: precio, 
+                        principio: principioNormalizado, 
+                        barcode: codigoBarras, 
+                        cvSku: cvSku,
+                        disponible: stock > 0 
+                    });
                 }
             }
 
@@ -502,15 +446,45 @@
                 if(qtyInCart > 0) btnHtml = `<div class="w-full mt-4 flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm"><button onclick="updateQty('${item.id}', -1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">-</button><span class="font-bold">${qtyInCart} en lista</span><button onclick="updateQty('${item.id}', 1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">+</button></div>`;
 
                 let principioDisplay = item.principio ? `<div class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="texto-ajustable">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
-                let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
-                let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
                 
-                let imagenHtml = (primaryBarcode && primaryBarcode.length >= 8) ? `
-                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm">
+                let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
+                
+                // MOTOR HÍBRIDO DE IMÁGENES (4 CAPAS)
+                let urlManual = imagenesBD[primaryBarcode]; 
+                let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
+                let imagenHtml = "";
+
+                if (urlManual) {
+                    // Capa 1: Foto Manual (Si la pusiste tú)
+                    imagenHtml = `
+                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
+                        <img src="${urlManual}" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white">
+                    </div>`;
+                } else if (item.cvSku) {
+                    // Capa 2 y 3: Cruz Verde rebotando a Yapp si falla
+                    imagenHtml = `
+                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
                         <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>
-                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.style.display='none'">
-                    </div>` : `
+                        <img src="https://beta.cruzverde.cl/on/demandware.static/-/Sites-masterCatalog_Chile/default/images/large/${item.cvSku}-1.jpg" 
+                             alt="${item.nombre}" 
+                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
+                             onerror="this.src='https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg'; this.onerror=function(){this.style.display='none'};">
+                    </div>`;
+                } else if (primaryBarcode && primaryBarcode.length >= 8) {
+                    // Capa 3 directa: Si no tiene código de Cruz Verde, va a Yapp directo
+                    imagenHtml = `
+                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>
+                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" 
+                             alt="${item.nombre}" 
+                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
+                             onerror="this.style.display='none'">
+                    </div>`;
+                } else {
+                    // Capa 4: Ícono por defecto
+                    imagenHtml = `
                     <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>`;
+                }
 
                 card.innerHTML = `<div class="flex justify-between items-start mb-2"><div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</div>${stockBadge}</div>${imagenHtml}<h3 class="text-sm md:text-base font-bold text-gray-800 mb-1 leading-snug texto-ajustable">${item.nombre}</h3>${principioDisplay}${primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}<div class="text-2xl font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>${btnHtml}`;
                 grid.appendChild(card);
@@ -522,17 +496,20 @@
         function addToCart(id, nombre, precio) { cart.push({ id, nombre, precio, cantidad: 1 }); updateCartUI(); renderPage(); showToast("Producto agregado"); }
         function updateQty(id, change) { let i = cart.findIndex(c => c.id === id); if(i > -1) { cart[i].cantidad += change; if(cart[i].cantidad <= 0) { cart.splice(i, 1); showToast("Producto eliminado", "error"); } } updateCartUI(); renderPage(); renderCartModal(); }
         function clearCart() { cart = []; updateCartUI(); renderPage(); toggleCart(); showToast("Cotización vaciada", "error"); }
+        
         function updateCartUI() {
             let tItems = 0, tMoney = 0; cart.forEach(i => { tItems += i.cantidad; tMoney += (i.precio * i.cantidad); });
             document.getElementById('floatingCount').innerText = tItems; document.getElementById('floatingTotal').innerText = clpFmt.format(tMoney); document.getElementById('cartTotal').innerText = clpFmt.format(tMoney);
             const fc = document.getElementById('floatingCart');
             if(tItems > 0) fc.classList.remove('translate-y-full'); else { fc.classList.add('translate-y-full'); if(!document.getElementById('cartModal').classList.contains('hidden')) toggleCart(); }
         }
+        
         function toggleCart() {
             const m = document.getElementById('cartModal'), c = m.querySelector('.modal-content');
             if(m.classList.contains('hidden')) { m.classList.remove('hidden'); renderCartModal(); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-x-full'); }, 10); } 
             else { m.classList.add('opacity-0'); c.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); }
         }
+        
         function renderCartModal() {
             const cont = document.getElementById('cartItems'); cont.innerHTML = '';
             if(cart.length === 0) { cont.innerHTML = `<div class="text-center py-10 text-gray-400"><p>Tu cotización está vacía</p></div>`; return; }
@@ -542,14 +519,18 @@
                 cont.appendChild(div);
             });
         }
+        
         function renderPagination(totalPages) {
             const cont = document.getElementById('pagination'); cont.innerHTML = ''; if (totalPages <= 1) return;
-            const createBtn = (html, d, onClick) => { const b = document.createElement('button'); b.innerHTML = html; b.disabled = d; b.onclick = onClick; b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${d ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white/80 shadow-sm'}`; return b; };
+            const createBtn = (html, d, onClick) => { const b = document.createElement('button'); b.innerHTML = html; b.disabled = d; b.onclick = onClick; b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${d ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50 backdrop-blur-sm' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white/80 backdrop-blur-sm shadow-sm'}`; return b; };
             cont.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
             const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white/80 backdrop-blur-sm py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; cont.appendChild(info);
             cont.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
         }
 
+        // ==========================================
+        // LÓGICA DE ESCÁNER
+        // ==========================================
         function startScanner() {
             document.getElementById('scannerModal').classList.remove('hidden'); document.getElementById('scannerModal').classList.add('flex');
             html5QrcodeScanner = new Html5Qrcode("reader");
@@ -557,6 +538,47 @@
         }
         function stopScanner() { document.getElementById('scannerModal').classList.add('hidden'); document.getElementById('scannerModal').classList.remove('flex'); if (html5QrcodeScanner) html5QrcodeScanner.stop().catch(()=>{}); }
 
+        // ==========================================
+        // GESTIÓN SEGURA DE API KEY DE GEMINI
+        // ==========================================
+        function getApiKey() {
+            return localStorage.getItem('gemini_api_key');
+        }
+
+        function openApiModal() {
+            document.getElementById('apiConfigModal').classList.remove('hidden');
+            document.getElementById('apiConfigModal').classList.add('flex');
+            
+            const currentKey = getApiKey();
+            if (currentKey) { document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4); }
+            document.getElementById('apiPasswordInput').value = ""; // Limpiar siempre por seguridad
+        }
+
+        function closeApiModal() {
+            document.getElementById('apiConfigModal').classList.add('hidden');
+            document.getElementById('apiConfigModal').classList.remove('flex');
+        }
+
+        function saveApiKey() {
+            const passInput = document.getElementById('apiPasswordInput').value;
+            if (passInput !== PASSWORD_ACCESO) {
+                showToast("Contraseña de autorización incorrecta", "error");
+                return;
+            }
+
+            const keyInput = document.getElementById('apiKeyInput').value.trim();
+            if (keyInput && !keyInput.startsWith('****')) {
+                localStorage.setItem('gemini_api_key', keyInput);
+                showToast("Clave sellada y guardada con éxito");
+            } else if (keyInput.startsWith('****')) {
+                showToast("Autenticación correcta. Manteniendo clave anterior.");
+            }
+            closeApiModal();
+        }
+
+        // ==========================================
+        // INTELIGENCIA ARTIFICIAL (GEMINI)
+        // ==========================================
         async function smartAISearch() {
             const input = document.getElementById('searchInput'), btnWand = document.getElementById('btnWand');
             if (activeAISearchTerms.length > 0) { clearAISearch(); return; }
