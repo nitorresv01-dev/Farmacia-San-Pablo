@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
@@ -29,7 +28,7 @@
         .texto-ajustable { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        #cartModal, #apiModal { transition: opacity 0.3s ease-in-out; }
+        #cartModal { transition: opacity 0.3s ease-in-out; }
         .modal-content { transition: transform 0.3s ease-in-out; }
         #reader { border-radius: 12px; overflow: hidden; }
         #reader video { object-fit: cover; }
@@ -37,15 +36,15 @@
 </head>
 <body class="flex flex-col min-h-screen pb-24 bg-fixed bg-center bg-cover" style="background-image: linear-gradient(rgba(255, 255, 255, 0.65), rgba(244, 247, 246, 0.95)), url('fondo-farmacia.jpg');">
     
-    <!-- Sistema de Notificaciones Toast -->
     <div id="toastContainer" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Header -->
     <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b-4 border-spBlue">
         <div class="px-4 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-3">
-                <div class="relative flex items-center justify-center w-12 h-12 bg-spBlue rounded-full shadow-md">
-                    <i class="fa-solid fa-plus text-white text-3xl"></i>
+                <!-- LOGO DE LA FARMACIA -->
+                <div class="relative flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md overflow-hidden border-2 border-spBlue">
+                    <img src="logo.png" alt="Logo San Pablo" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\'fa-solid fa-plus text-spBlue text-2xl\'></i>'">
                 </div>
                 <div class="leading-none">
                     <h1 class="text-2xl font-extrabold tracking-tight text-gray-800">
@@ -55,6 +54,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-4 text-sm font-semibold text-gray-500">
+                <!-- Ícono de Ajustes IA restaurado -->
                 <button onclick="openApiModal()" class="text-gray-400 hover:text-spBlue transition" title="Configurar Inteligencia Artificial">
                     <i class="fa-solid fa-gear text-lg"></i>
                 </button>
@@ -69,11 +69,9 @@
     <section class="backdrop-blur-md py-8 relative overflow-hidden shadow-inner border-b border-white/30" style="background-color: rgba(125, 161, 191, 0.45);">
         <div class="max-w-4xl mx-auto px-4 relative z-10 text-center">
             
-            <!-- Título y subtítulo con alto contraste -->
             <h2 class="text-spBlueDark text-3xl md:text-4xl font-black mb-2 drop-shadow-sm">Cotizador de Precios</h2>
             <p class="text-gray-800 text-sm md:text-base font-bold drop-shadow-sm">Busca tus medicamentos y calcula tu total al instante.</p>
             
-            <!-- Fecha de actualización (Restaurada y estilizada) -->
             <div class="mt-3 mb-6 flex justify-center">
                 <div class="inline-flex items-center gap-2 text-xs text-gray-700 font-semibold bg-white/50 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/60 shadow-sm">
                     <i class="fa-solid fa-clock text-spBlueDark"></i>
@@ -82,7 +80,6 @@
                 </div>
             </div>
 
-            <!-- Caja Principal -->
             <div class="bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-2 border border-white/50">
                 <div class="w-full md:w-1/3 flex items-center border-b md:border-b-0 md:border-r border-gray-200 px-2">
                     <i class="fa-solid fa-flask text-spBlueDark mr-2"></i>
@@ -93,9 +90,7 @@
                 </div>
                 <div class="w-full md:w-2/3 flex items-center px-2 relative">
                     <i class="fa-solid fa-magnifying-glass text-gray-400 text-xl mr-2"></i>
-                    
                     <input type="text" id="searchInput" class="w-full py-3 pr-36 text-base md:text-lg outline-none text-gray-700 bg-transparent placeholder-gray-400" placeholder="Nombre, síntoma o componente..." autocomplete="off" disabled>
-                    
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
                         <button id="btnWand" onclick="smartAISearch()" class="bg-spBlueDark text-white w-10 h-10 rounded-xl hover:bg-spBlue shadow-md transition flex items-center justify-center" title="Búsqueda Inteligente (Síntomas)">
                             <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
@@ -111,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- Banner de IA Activa -->
             <div id="aiActiveBanner" class="hidden mt-4 bg-white/95 backdrop-blur-sm border border-spBlue rounded-xl p-3 text-left shadow-lg relative z-20 transition-all duration-300">
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex-grow">
@@ -140,14 +134,26 @@
             <div class="loader"></div>
             <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-500 font-normal">Leyendo inventario local</span></span>
         </div>
-        <div class="flex justify-between items-center mb-4 hidden" id="resultsHeader">
+        
+        <!-- HEADER DE RESULTADOS Y ORDENAMIENTO -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 hidden gap-3" id="resultsHeader">
             <div class="text-sm text-gray-600 font-bold bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-white/50" id="resultsCount"></div>
+            <div class="flex items-center gap-2">
+                <label for="sortFilter" class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ordenar por:</label>
+                <select id="sortFilter" class="bg-white/90 backdrop-blur-sm border border-gray-200 text-spBlueDark text-sm rounded-xl focus:ring-spBlue focus:border-spBlue block px-3 py-2 shadow-sm font-bold outline-none cursor-pointer">
+                    <option value="name_asc">Nombre (A - Z)</option>
+                    <option value="price_asc">Precio (Menor a Mayor)</option>
+                    <option value="price_desc">Precio (Mayor a Menor)</option>
+                    <option value="stock_desc">Disponibles primero</option>
+                </select>
+            </div>
         </div>
+
         <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
         <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
     </main>
 
-    <!-- Barra Flotante del Carrito -->
+    <!-- Barra Flotante y Modales... -->
     <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex flex-col">
@@ -160,7 +166,6 @@
         </div>
     </div>
 
-    <!-- Modal del Carrito -->
     <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end backdrop-blur-sm">
         <div class="modal-content w-full md:w-[400px] bg-gray-50 h-full flex flex-col transform translate-x-full">
             <div class="bg-white px-5 py-4 flex justify-between items-center border-b border-gray-100 shadow-sm">
@@ -180,7 +185,6 @@
         </div>
     </div>
 
-    <!-- Modal del Escáner -->
     <div id="scannerModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-5 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="stopScanner()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -190,7 +194,7 @@
         </div>
     </div>
 
-    <!-- Modal de Resultados IA -->
+    <!-- Modal Resultados IA -->
     <div id="aiModal" class="fixed inset-0 bg-black/80 z-[80] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="closeAIModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -200,24 +204,37 @@
         </div>
     </div>
 
-    <!-- Modal Configuración API Key (Seguridad) -->
-    <div id="apiModal" class="fixed inset-0 bg-black/80 z-[90] hidden flex-col justify-center items-center backdrop-blur-sm">
+    <!-- MODAL DE SEGURIDAD IA (CLAVE GEMINI + CONTRASEÑA) -->
+    <div id="apiConfigModal" class="fixed inset-0 bg-black/80 z-[90] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="closeApiModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
-            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center"><i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA</h3>
-            <p class="text-sm text-gray-600 mb-4 text-center">Para usar el asistente inteligente, ingresa tu clave de Google Gemini. Se guardará de forma segura y encriptada en este navegador, nunca en GitHub.</p>
-            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark" placeholder="Pega tu API Key de Gemini aquí...">
-            <button onclick="saveApiKey()" class="w-full bg-spBlueDark hover:bg-spBlue text-white font-bold py-3 rounded-xl transition shadow-md">
-                Guardar Clave
+            
+            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center">
+                <i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA
+            </h3>
+            <p class="text-sm text-gray-600 mb-5 text-center">
+                Para activar el motor de Inteligencia Artificial, ingresa tu clave de Google Gemini y la contraseña de autorización del local. La clave se guardará sellada en este navegador.
+            </p>
+            
+            <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Clave de Google Gemini</label>
+            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Pega tu API Key de Gemini aquí...">
+            
+            <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Contraseña de Farmacia</label>
+            <input type="password" id="apiPasswordInput" class="w-full p-3 border border-gray-300 rounded-xl mb-5 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Ingresa la contraseña del sistema...">
+            
+            <button onclick="saveApiKey()" class="w-full bg-spBlueDark hover:bg-spBlue text-white font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar y Activar
             </button>
         </div>
     </div>
 
     <script>
-        // RUTA AL CSV LIGERO (Generado por tu script de Python)
+        // ==========================================
+        // 🔒 CONTRASEÑA MAESTRA DE SEGURIDAD
+        // ==========================================
+        const PASSWORD_ACCESO = "sanpablo2026"; // Cambia esta contraseña si lo deseas
+
         const URL_CSV_MAESTRO = "Libro1.csv?nocache=" + new Date().getTime();
-        
-        // RUTAS DE GOOGLE SHEETS PARA BASES ESTÁTICAS
         const GID_EAN13 = "1436350776"; 
         const URL_CSV_EAN13 = "https://docs.google.com/spreadsheets/d/1GjVV8vuErPNmOIVkP-pk6VPiTrlf4IQby2v-OS0J3Zg/export?format=csv&gid=" + GID_EAN13 + "&nocache=" + new Date().getTime();
         const GID_ISP = "123869210"; 
@@ -226,25 +243,20 @@
         let allProducts = [];
         let filteredProducts = [];
         let cart = [];
-
         let currentPage = 1;
         const itemsPerPage = 24;
         const clpFmt = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
-        
         let html5QrcodeScanner = null;
         let compoundFilter = 'all'; 
         let activeAISearchTerms = [];
 
         window.onload = () => {
-            document.getElementById('searchInput').addEventListener('input', () => { 
-                currentPage = 1; 
-                applyFilters(); 
-            });
+            document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; applyFilters(); });
             document.getElementById('labFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+            document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
             cargarBasesDeDatos();
         };
 
-        // SISTEMA DE NOTIFICACIONES TOAST
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -253,233 +265,178 @@
             
             toast.className = `${bgColor} text-white px-5 py-2.5 rounded-full shadow-lg transition-all duration-300 opacity-0 transform translate-y-4 flex items-center gap-2 text-sm font-semibold`;
             toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
-            
             container.appendChild(toast);
             
-            setTimeout(() => {
-                toast.classList.remove('opacity-0', 'translate-y-4');
-                toast.classList.add('opacity-100', 'translate-y-0');
-            }, 10);
+            setTimeout(() => { toast.classList.remove('opacity-0', 'translate-y-4'); toast.classList.add('opacity-100', 'translate-y-0'); }, 10);
+            setTimeout(() => { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-4'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        // ==========================================
+        // GESTIÓN SEGURA DE API KEY (LOCALSTORAGE)
+        // ==========================================
+        function getApiKey() {
+            return localStorage.getItem('gemini_api_key');
+        }
+
+        function openApiModal() {
+            document.getElementById('apiConfigModal').classList.remove('hidden');
+            document.getElementById('apiConfigModal').classList.add('flex');
             
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'translate-y-4');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            // Si ya hay una clave guardada, mostrarla ofuscada
+            const currentKey = getApiKey();
+            if (currentKey) {
+                document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4);
+            }
+            // Limpiar la contraseña siempre por seguridad
+            document.getElementById('apiPasswordInput').value = "";
+        }
+
+        function closeApiModal() {
+            document.getElementById('apiConfigModal').classList.add('hidden');
+            document.getElementById('apiConfigModal').classList.remove('flex');
+        }
+
+        function saveApiKey() {
+            const passInput = document.getElementById('apiPasswordInput').value;
+            
+            // Verificación de la contraseña del local
+            if (passInput !== PASSWORD_ACCESO) {
+                showToast("Contraseña de autorización incorrecta", "error");
+                return;
+            }
+
+            const keyInput = document.getElementById('apiKeyInput').value.trim();
+            if (keyInput && !keyInput.startsWith('****')) {
+                localStorage.setItem('gemini_api_key', keyInput);
+                showToast("Clave sellada y guardada con éxito");
+            } else if (keyInput.startsWith('****')) {
+                showToast("Autenticación correcta. Manteniendo clave anterior.");
+            }
+            closeApiModal();
+        }
+
+        // ==========================================
+        // FILTROS Y PROCESAMIENTO
+        // ==========================================
+        function setCompoundFilter(type) {
+            compoundFilter = type;
+            const activeClass = "px-3 md:px-5 py-2 rounded-lg bg-white/90 text-spBlueDark shadow-sm transition-all duration-300 border border-white";
+            const inactiveClass = "px-3 md:px-5 py-2 rounded-lg text-gray-700 hover:text-spBlueDark hover:bg-white/40 transition-all duration-300";
+            
+            document.getElementById('btnFilterAll').className = type === 'all' ? activeClass : inactiveClass;
+            document.getElementById('btnFilterMono').className = type === 'mono' ? activeClass : inactiveClass;
+            document.getElementById('btnFilterComp').className = type === 'comp' ? activeClass : inactiveClass;
+            
+            currentPage = 1;
+            applyFilters();
         }
 
         async function cargarBasesDeDatos() {
-            // Lector de CSV ultrarrápido
             const fetchCSV = (url) => new Promise((resolve) => {
                 try {
-                    Papa.parse(url, {
-                        download: true,
-                        header: false,
-                        delimiter: ";", 
-                        complete: (results) => resolve(results.data),
-                        error: (err) => resolve([]) 
-                    });
-                } catch(e) {
-                    resolve([]);
-                }
+                    Papa.parse(url, { download: true, header: false, delimiter: ";", complete: (results) => resolve(results.data), error: () => resolve([]) });
+                } catch(e) { resolve([]); }
             });
 
-            // CARGAR LA FECHA DEL EXCEL
             try {
                 const resMeta = await fetch("metadata.json?nocache=" + new Date().getTime());
                 if (resMeta.ok) {
                     const metaData = await resMeta.json();
                     document.getElementById('fechaActualizacion').innerText = metaData.fecha || "No disponible";
                 }
-            } catch (e) { 
-                document.getElementById('fechaActualizacion').innerText = "No disponible"; 
-            }
+            } catch (e) { document.getElementById('fechaActualizacion').innerText = "No disponible"; }
 
-            // Procesamiento concurrente
             try {
                 const [maestroData, ean13Data, ispData] = await Promise.all([
-                    fetchCSV(URL_CSV_MAESTRO),
-                    fetchCSV(URL_CSV_EAN13),
-                    fetchCSV(URL_CSV_ISP)
+                    fetchCSV(URL_CSV_MAESTRO), fetchCSV(URL_CSV_EAN13), fetchCSV(URL_CSV_ISP)
                 ]);
                 procesarDatos(maestroData, ean13Data, ispData);
             } catch (error) {
-                console.error("Error crítico cargando datos:", error);
-                document.getElementById('statusContainer').innerHTML = `
-                    <i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i>
-                    <h3 class="font-black text-xl text-red-500">Error de Sistema</h3>
-                    <p class="text-sm font-medium text-gray-600 leading-snug">No se pudo leer el archivo Libro1.csv.<br>Asegúrate de ejecutar tu script de actualización.</p>
-                `;
+                document.getElementById('statusContainer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i><h3 class="font-black text-xl text-red-500">Error de Sistema</h3><p class="text-sm font-medium text-gray-600">No se pudo leer Libro1.csv.</p>`;
             }
         }
 
         function limpiarTextoFarma(texto) {
             if(!texto) return "";
-            return texto.toUpperCase()
-                .replace(/\([^)]*\)/g, '') 
-                .replace(/\b[0-9]+([.,][0-9]+)?\s*(MG|ML|GR|G|MCG|UI|U|UI\/ML|%|L|KG)\b/gi, '') 
-                .replace(/\b(COMP|COMPRIMIDO|COMPRIMIDOS|RECUBIERTO|RECUBIERTOS|JBE|JARABE|CAPS|CAPSULAS|SUSP|SUSPENSION|SOL|SOLUCION|GTS|GOTAS|SOBRES|INY|INYECTABLE|CREMA|POMADA|UNG|OVULOS|AMP|FCO|TAB|PILD|CM|REC|FORTE|PLUS)\b/gi, '') 
-                .replace(/[^A-Z \s]/g, ' ') 
-                .replace(/\s+/g, ' ') 
-                .trim();
+            return texto.toUpperCase().replace(/\([^)]*\)/g, '').replace(/\b[0-9]+([.,][0-9]+)?\s*(MG|ML|GR|G|MCG|UI|U|UI\/ML|%|L|KG)\b/gi, '').replace(/\b(COMP|COMPRIMIDO|COMPRIMIDOS|RECUBIERTO|RECUBIERTOS|JBE|JARABE|CAPS|CAPSULAS|SUSP|SUSPENSION|SOL|SOLUCION|GTS|GOTAS|SOBRES|INY|INYECTABLE|CREMA|POMADA|UNG|OVULOS|AMP|FCO|TAB|PILD|CM|REC|FORTE|PLUS)\b/gi, '').replace(/[^A-Z \s]/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
         function procesarDatos(rawDataMaestro, rawDataEan, rawDataIsp) {
-            
             let headerRowIndex = 0; 
             for (let i = 0; i < Math.min(5, rawDataMaestro.length); i++) {
                 let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
-                if (rowStr.includes("LAB") && rowStr.includes("PRECIO")) { 
-                    headerRowIndex = i; 
-                    break; 
-                }
+                if (rowStr.includes("LAB") && rowStr.includes("PRECIO")) { headerRowIndex = i; break; }
             }
 
             if (rawDataMaestro.length === 0) {
-                document.getElementById('statusContainer').innerHTML = `
-                    <i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i>
-                    <h3 class="font-black text-xl text-red-500">Catálogo Vacío</h3>
-                    <p class="text-sm font-medium text-gray-600 leading-snug">Sube el archivo Libro1.csv a la carpeta de tu servidor.</p>
-                `;
+                document.getElementById('statusContainer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i><h3 class="font-black text-xl text-red-500">Catálogo Vacío</h3>`;
                 return;
             }
 
             let barcodeMap = {};
-            let esValidoEAN = rawDataEan && rawDataEan.length > 0 && rawDataEan.some(row => row && String(row[0]).toUpperCase().includes("EAN_13"));
-            
-            if (esValidoEAN) {
+            if (rawDataEan && rawDataEan.length > 0 && rawDataEan.some(row => row && String(row[0]).toUpperCase().includes("EAN_13"))) {
                 for (let i = 1; i < rawDataEan.length; i++) { 
-                    let row = rawDataEan[i];
-                    if (!row || row.length < 2) continue;
-                    let ean = String(row[0]).trim();
-                    let codi = String(row[1]).trim();
-                    if (ean && codi) {
-                        if (!barcodeMap[codi]) barcodeMap[codi] = [];
-                        barcodeMap[codi].push(ean);
-                    }
+                    if (!rawDataEan[i] || rawDataEan[i].length < 2) continue;
+                    let ean = String(rawDataEan[i][0]).trim(), codi = String(rawDataEan[i][1]).trim();
+                    if (ean && codi) { if (!barcodeMap[codi]) barcodeMap[codi] = []; barcodeMap[codi].push(ean); }
                 }
             }
 
-            let ispMapExacto = {};
-            let ispMapLimpio = {};
-            const COL_NOMBRE_ISP = 1;  
-            const COL_PRINCIPIO_ISP = 3; 
-
+            let ispMapExacto = {}, ispMapLimpio = {};
             if (rawDataIsp && rawDataIsp.length > 0) {
                 for (let i = 1; i < rawDataIsp.length; i++) { 
-                    let row = rawDataIsp[i];
-                    if (!row || row.length <= Math.max(COL_NOMBRE_ISP, COL_PRINCIPIO_ISP)) continue;
+                    if (!rawDataIsp[i] || rawDataIsp[i].length <= 3) continue;
+                    let nombreComercialISP = String(rawDataIsp[i][1]).trim().toUpperCase();
+                    let principioOficialISP = String(rawDataIsp[i][3]).trim().toUpperCase();
                     
-                    let nombreComercialISP = String(row[COL_NOMBRE_ISP]).trim().toUpperCase();
-                    let principioOficialISP = String(row[COL_PRINCIPIO_ISP]).trim().toUpperCase();
-                    
-                    if (!principioOficialISP || principioOficialISP === "") {
-                        if (nombreComercialISP.includes('(')) {
-                            let match = nombreComercialISP.match(/\(([^)]+)\)/);
-                            if (match) {
-                                principioOficialISP = match[1].trim(); 
-                            }
-                        }
+                    if (!principioOficialISP && nombreComercialISP.includes('(')) {
+                        let match = nombreComercialISP.match(/\(([^)]+)\)/);
+                        if (match) principioOficialISP = match[1].trim(); 
                     }
-
                     if (nombreComercialISP && principioOficialISP) {
                         ispMapExacto[nombreComercialISP] = principioOficialISP;
                         let nombreLimpio = limpiarTextoFarma(nombreComercialISP);
-                        if (nombreLimpio && nombreLimpio.length >= 3) {
-                            ispMapLimpio[nombreLimpio] = principioOficialISP;
-                        }
+                        if (nombreLimpio && nombreLimpio.length >= 3) ispMapLimpio[nombreLimpio] = principioOficialISP;
                     }
                 }
             }
 
             let tempProducts = [];
-            
             for (let i = headerRowIndex + 1; i < rawDataMaestro.length; i++) {
                 const row = rawDataMaestro[i];
                 if (!row || row.length < 8) continue;
 
-                let precioStr = typeof row[7] === 'string' ? row[7].replace(/[^0-9]/g, '') : row[7];
-                let precio = parseInt(precioStr);
+                let precio = parseInt(typeof row[7] === 'string' ? row[7].replace(/[^0-9]/g, '') : row[7]);
                 let stock = parseInt(row[10]) || 0;
-                let labName = String(row[0]).trim();
-                let codigoInterno = String(row[2]).trim(); 
-                let codigoBarrasBase = row[3] ? String(row[3]).trim() : "";
+                let labName = String(row[0]).trim(), codigoInterno = String(row[2]).trim(), codigoBarrasBase = row[3] ? String(row[3]).trim() : "";
+                let nombre = String(row[4]).trim(), nombreLimpioMaestro = limpiarTextoFarma(nombre.toUpperCase());
                 
-                let nombre = String(row[4]).trim();
-                let nombreParaCruce = nombre.toUpperCase();
-                let nombreLimpioMaestro = limpiarTextoFarma(nombreParaCruce);
-                
-                let principioActivo = row[12] ? String(row[12]).trim() : "";
-                let principioEncontrado = "";
-                
-                if (ispMapExacto[nombreParaCruce]) {
-                    principioEncontrado = ispMapExacto[nombreParaCruce];
-                } else if (ispMapLimpio[nombreLimpioMaestro]) {
-                    principioEncontrado = ispMapLimpio[nombreLimpioMaestro];
-                } else {
+                let principioActivo = row[12] ? String(row[12]).trim() : "", principioEncontrado = ispMapExacto[nombre.toUpperCase()] || ispMapLimpio[nombreLimpioMaestro];
+                if (!principioEncontrado) {
                     let palabras = nombreLimpioMaestro.split(' ');
                     if (palabras.length > 0) {
-                        let p1 = palabras[0];
-                        let p2 = palabras.length > 1 ? p1 + ' ' + palabras[1] : null;
-                        let p3 = palabras.length > 2 ? p2 + ' ' + palabras[2] : null;
-
-                        if (p3 && ispMapLimpio[p3]) { principioEncontrado = ispMapLimpio[p3]; } 
-                        else if (p2 && ispMapLimpio[p2]) { principioEncontrado = ispMapLimpio[p2]; } 
-                        else if (p1 && p1.length >= 4 && ispMapLimpio[p1]) { principioEncontrado = ispMapLimpio[p1]; }
+                        let p1 = palabras[0], p2 = palabras.length > 1 ? p1 + ' ' + palabras[1] : null, p3 = palabras.length > 2 ? p2 + ' ' + palabras[2] : null;
+                        principioEncontrado = (p3 && ispMapLimpio[p3]) ? ispMapLimpio[p3] : (p2 && ispMapLimpio[p2]) ? ispMapLimpio[p2] : (p1 && p1.length >= 4 && ispMapLimpio[p1]) ? ispMapLimpio[p1] : "";
                     }
                 }
 
-                if (principioEncontrado && principioEncontrado !== "") {
-                    principioActivo = principioEncontrado;
-                }
-
-                let principioNormalizado = principioActivo
-                    .replace(/\s*\/\/\s*/g, ' + ') 
-                    .replace(/\s*\/\s*/g, ' + ')   
-                    .replace(/\s*-\s*/g, ' + ')
-                    .replace(/\s*;\s*/g, ' + ')
-                    .replace(/\s*,\s*/g, ' + ')
-                    .replace(/\s+\by\b\s+/gi, ' + ')
-                    .replace(/\s+\be\b\s+/gi, ' + ')
-                    .replace(/\s*&\s*/g, ' + ')
-                    .replace(/\s*\+\s*\+/g, ' + ') 
-                    .trim();
-                
-                principioNormalizado = principioNormalizado.replace(/^\+\s*/, '').replace(/\s*\+$/, '');
-
-                let todosLosCodigos = codigoBarrasBase;
-                if (barcodeMap[codigoInterno]) {
-                    todosLosCodigos += " " + barcodeMap[codigoInterno].join(" ");
-                }
+                let principioNormalizado = (principioEncontrado || principioActivo).replace(/\s*\/\/\s*|\s*\/\s*|\s*-\s*|\s*;\s*|\s*,\s*|\s+\by\b\s+|\s+\be\b\s+|\s*&\s*|\s*\+\s*\+/gi, ' + ').trim().replace(/^\+\s*|\s*\+$/g, '');
+                let todosLosCodigos = barcodeMap[codigoInterno] ? codigoBarrasBase + " " + barcodeMap[codigoInterno].join(" ") : codigoBarrasBase;
 
                 if (nombre && !isNaN(precio) && precio > 0) {
-                    tempProducts.push({
-                        id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i,
-                        lab: labName,
-                        nombre: nombre,
-                        precio: precio,
-                        principio: principioNormalizado,
-                        barcode: todosLosCodigos.trim(), 
-                        disponible: stock > 0 
-                    });
+                    tempProducts.push({ id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i, lab: labName, nombre: nombre, precio: precio, principio: principioNormalizado, barcode: todosLosCodigos.trim(), disponible: stock > 0 });
                 }
             }
 
             allProducts = tempProducts;
-
-            const labs = [...new Set(allProducts.map(p => p.lab).filter(l => l !== ''))].sort();
             const labFilter = document.getElementById('labFilter');
             labFilter.innerHTML = '<option value="">Todos los laboratorios</option>';
-            labs.forEach(lab => {
-                const opt = document.createElement('option');
-                opt.value = lab;
-                opt.innerText = lab;
-                labFilter.appendChild(opt);
+            [...new Set(allProducts.map(p => p.lab).filter(l => l !== ''))].sort().forEach(lab => {
+                const opt = document.createElement('option'); opt.value = lab; opt.innerText = lab; labFilter.appendChild(opt);
             });
 
             document.getElementById('statusContainer').style.display = 'none';
             document.getElementById('resultsHeader').classList.remove('hidden');
-            
             document.getElementById('searchInput').disabled = false;
             document.getElementById('labFilter').disabled = false;
             
@@ -493,38 +450,30 @@
 
             filteredProducts = allProducts.filter(p => {
                 const searchable = `${p.nombre} ${p.lab} ${p.principio} ${p.barcode}`.toLowerCase();
-                let textMatch = false;
+                let textMatch = terms.length === 0 ? true : terms.every(t => searchable.includes(t));
                 
                 if (activeAISearchTerms.length > 0) {
-                    let matchIA = activeAISearchTerms.some(cleanTerm => {
-                        try {
-                            const safeTerm = cleanTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            const regex = new RegExp(`\\b${safeTerm}\\b`, 'i');
-                            return regex.test(p.nombre) || regex.test(p.principio);
-                        } catch(e) {
-                            return p.nombre.toLowerCase().includes(cleanTerm.toLowerCase()) ||
-                                   p.principio.toLowerCase().includes(cleanTerm.toLowerCase());
-                        }
-                    });
-                    if (terms.length > 0) {
-                        textMatch = matchIA && terms.every(t => searchable.includes(t));
-                    } else {
-                        textMatch = matchIA;
-                    }
-                } else {
-                    textMatch = terms.length === 0 ? true : terms.every(t => searchable.includes(t));
+                    let matchIA = activeAISearchTerms.some(cleanTerm => p.nombre.toLowerCase().includes(cleanTerm.toLowerCase()) || p.principio.toLowerCase().includes(cleanTerm.toLowerCase()));
+                    textMatch = terms.length > 0 ? (matchIA && textMatch) : matchIA;
                 }
                 
-                const labMatch = selectedLab === "" ? true : p.lab === selectedLab;
                 let compoundMatch = true;
-                
                 if (compoundFilter !== 'all') {
                     const isCompound = String(p.principio || "").includes('+');
                     if (compoundFilter === 'mono') compoundMatch = !isCompound;
                     if (compoundFilter === 'comp') compoundMatch = isCompound;
                 }
 
-                return textMatch && labMatch && compoundMatch;
+                return textMatch && (selectedLab === "" || p.lab === selectedLab) && compoundMatch;
+            });
+
+            // LÓGICA DE ORDENAMIENTO
+            const sortVal = document.getElementById('sortFilter').value;
+            filteredProducts.sort((a, b) => {
+                if (sortVal === 'price_asc') return a.precio - b.precio;
+                if (sortVal === 'price_desc') return b.precio - a.precio;
+                if (sortVal === 'stock_desc') return (b.disponible === true ? 1 : 0) - (a.disponible === true ? 1 : 0);
+                return a.nombre.localeCompare(b.nombre); // name_asc
             });
 
             renderPage();
@@ -540,487 +489,135 @@
 
             if (totalItems === 0) {
                 grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500 bg-white/60 backdrop-blur-md rounded-3xl max-w-lg mx-auto shadow-sm border border-white/50"><i class="fa-solid fa-pills text-5xl mb-4 text-spBlueDark/50"></i><p class="text-lg font-bold">No encontramos resultados.</p></div>`;
-                document.getElementById('pagination').innerHTML = '';
-                return;
+                document.getElementById('pagination').innerHTML = ''; return;
             }
 
-            const currentItems = filteredProducts.slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage);
-
-            currentItems.forEach(item => {
-                const cartItem = cart.find(c => c.id === item.id);
-                const qtyInCart = cartItem ? cartItem.cantidad : 0;
-                
+            filteredProducts.slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage).forEach(item => {
+                const qtyInCart = cart.find(c => c.id === item.id)?.cantidad || 0;
                 const card = document.createElement('div');
                 card.className = `bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-sm border border-white/60 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
                 
-                let stockBadge = item.disponible 
-                    ? `<span class="bg-blue-50 text-spBlueDark px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>`
-                    : `<span class="bg-red-50 text-red-500 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
+                let stockBadge = item.disponible ? `<span class="bg-blue-50 text-spBlueDark px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>` : `<span class="bg-red-50 text-red-500 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
+                let btnHtml = item.disponible ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold py-2 rounded-xl transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Agregar</button>` : `<button disabled class="w-full mt-4 bg-gray-100 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-200">Sin Stock</button>`;
+                if(qtyInCart > 0) btnHtml = `<div class="w-full mt-4 flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm"><button onclick="updateQty('${item.id}', -1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">-</button><span class="font-bold">${qtyInCart} en lista</span><button onclick="updateQty('${item.id}', 1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">+</button></div>`;
 
-                let btnHtml = item.disponible 
-                    ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Agregar
-                       </button>`
-                    : `<button disabled class="w-full mt-4 bg-gray-100 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-200">Sin Stock</button>`;
-
-                if(qtyInCart > 0) {
-                    btnHtml = `
-                        <div class="w-full mt-4 flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm">
-                            <button onclick="updateQty('${item.id}', -1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">-</button>
-                            <span class="font-bold">${qtyInCart} en lista</span>
-                            <button onclick="updateQty('${item.id}', 1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">+</button>
-                        </div>
-                    `;
-                }
-
-                let principioDisplay = item.principio 
-                    ? `<div class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="texto-ajustable">${item.principio}</span></div>`
-                    : `<div class="flex-grow"></div>`;
-
+                let principioDisplay = item.principio ? `<div class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="texto-ajustable">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
                 let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
-                
-                // SISTEMA DE FOTOS EN TIEMPO REAL (Lógica Lazy Load Fallback)
                 let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
-                let imagenHtml = "";
                 
-                if (primaryBarcode && primaryBarcode.length >= 8) {
-                    imagenHtml = `
+                let imagenHtml = (primaryBarcode && primaryBarcode.length >= 8) ? `
                     <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm">
-                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0">
-                            <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
-                        </div>
-                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" 
-                             alt="${item.nombre}" 
-                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
-                             onerror="this.style.display='none'">
-                    </div>`;
-                } else {
-                    imagenHtml = `
-                    <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3">
-                        <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
-                    </div>`;
-                }
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>
+                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.style.display='none'">
+                    </div>` : `
+                    <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>`;
 
-                let barcodeDisplay = primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>';
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</div>
-                        ${stockBadge}
-                    </div>
-                    ${imagenHtml} 
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-1 leading-snug texto-ajustable">${item.nombre}</h3>
-                    ${principioDisplay}
-                    ${barcodeDisplay}
-                    <div class="text-2xl font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>
-                    ${btnHtml}
-                `;
+                card.innerHTML = `<div class="flex justify-between items-start mb-2"><div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</div>${stockBadge}</div>${imagenHtml}<h3 class="text-sm md:text-base font-bold text-gray-800 mb-1 leading-snug texto-ajustable">${item.nombre}</h3>${principioDisplay}${primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}<div class="text-2xl font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>${btnHtml}`;
                 grid.appendChild(card);
             });
 
             renderPagination(totalPages);
         }
 
-        function addToCart(id, nombre, precio) { 
-            cart.push({ id, nombre, precio, cantidad: 1 }); 
-            updateCartUI(); 
-            renderPage(); 
-            showToast("Producto agregado");
-        }
-
-        function updateQty(id, change) {
-            let itemIndex = cart.findIndex(c => c.id === id);
-            if(itemIndex > -1) {
-                cart[itemIndex].cantidad += change;
-                if(cart[itemIndex].cantidad <= 0) {
-                    cart.splice(itemIndex, 1);
-                    showToast("Producto eliminado", "error");
-                }
-            }
-            updateCartUI(); renderPage(); renderCartModal(); 
-        }
-
-        function clearCart() { 
-            cart = []; 
-            updateCartUI(); 
-            renderPage(); 
-            toggleCart(); 
-            showToast("Cotización vaciada", "error");
-        }
-
+        function addToCart(id, nombre, precio) { cart.push({ id, nombre, precio, cantidad: 1 }); updateCartUI(); renderPage(); showToast("Producto agregado"); }
+        function updateQty(id, change) { let i = cart.findIndex(c => c.id === id); if(i > -1) { cart[i].cantidad += change; if(cart[i].cantidad <= 0) { cart.splice(i, 1); showToast("Producto eliminado", "error"); } } updateCartUI(); renderPage(); renderCartModal(); }
+        function clearCart() { cart = []; updateCartUI(); renderPage(); toggleCart(); showToast("Cotización vaciada", "error"); }
         function updateCartUI() {
-            const floatingCart = document.getElementById('floatingCart');
-            let totalItems = 0; let totalMoney = 0;
-
-            cart.forEach(item => { totalItems += item.cantidad; totalMoney += (item.precio * item.cantidad); });
-
-            document.getElementById('floatingCount').innerText = totalItems;
-            document.getElementById('floatingTotal').innerText = clpFmt.format(totalMoney);
-            document.getElementById('cartTotal').innerText = clpFmt.format(totalMoney);
-
-            if(totalItems > 0) floatingCart.classList.remove('translate-y-full');
-            else {
-                floatingCart.classList.add('translate-y-full');
-                if(!document.getElementById('cartModal').classList.contains('hidden')) toggleCart();
-            }
+            let tItems = 0, tMoney = 0; cart.forEach(i => { tItems += i.cantidad; tMoney += (i.precio * i.cantidad); });
+            document.getElementById('floatingCount').innerText = tItems; document.getElementById('floatingTotal').innerText = clpFmt.format(tMoney); document.getElementById('cartTotal').innerText = clpFmt.format(tMoney);
+            const fc = document.getElementById('floatingCart');
+            if(tItems > 0) fc.classList.remove('translate-y-full'); else { fc.classList.add('translate-y-full'); if(!document.getElementById('cartModal').classList.contains('hidden')) toggleCart(); }
         }
-
         function toggleCart() {
-            const modal = document.getElementById('cartModal');
-            const content = modal.querySelector('.modal-content');
-            if(modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden'); renderCartModal();
-                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
-            } else {
-                modal.classList.add('opacity-0'); content.classList.add('translate-x-full');
-                setTimeout(() => { modal.classList.add('hidden'); }, 300);
-            }
+            const m = document.getElementById('cartModal'), c = m.querySelector('.modal-content');
+            if(m.classList.contains('hidden')) { m.classList.remove('hidden'); renderCartModal(); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('translate-x-full'); }, 10); } 
+            else { m.classList.add('opacity-0'); c.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); }
         }
-
         function renderCartModal() {
-            const container = document.getElementById('cartItems'); container.innerHTML = '';
-            if(cart.length === 0) { container.innerHTML = `<div class="text-center py-10 text-gray-400"><p>Tu cotización está vacía</p></div>`; return; }
-
+            const cont = document.getElementById('cartItems'); cont.innerHTML = '';
+            if(cart.length === 0) { cont.innerHTML = `<div class="text-center py-10 text-gray-400"><p>Tu cotización está vacía</p></div>`; return; }
             cart.forEach(item => {
-                const div = document.createElement('div');
-                div.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center";
-                div.innerHTML = `
-                    <div class="flex-grow pr-2">
-                        <h4 class="text-sm font-bold text-gray-800 leading-tight texto-ajustable mb-1">${item.nombre}</h4>
-                        <div class="text-xs font-bold text-spBlueDark">${clpFmt.format(item.precio)} c/u</div>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <div class="font-black text-gray-800">${clpFmt.format(item.precio * item.cantidad)}</div>
-                        <div class="flex items-center bg-gray-100 rounded-lg overflow-hidden">
-                            <button onclick="updateQty('${item.id}', -1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">-</button>
-                            <span class="px-2 text-sm font-bold text-gray-800">${item.cantidad}</span>
-                            <button onclick="updateQty('${item.id}', 1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">+</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
+                const div = document.createElement('div'); div.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center";
+                div.innerHTML = `<div class="flex-grow pr-2"><h4 class="text-sm font-bold text-gray-800 leading-tight texto-ajustable mb-1">${item.nombre}</h4><div class="text-xs font-bold text-spBlueDark">${clpFmt.format(item.precio)} c/u</div></div><div class="flex flex-col items-end gap-1"><div class="font-black text-gray-800">${clpFmt.format(item.precio * item.cantidad)}</div><div class="flex items-center bg-gray-100 rounded-lg overflow-hidden"><button onclick="updateQty('${item.id}', -1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">-</button><span class="px-2 text-sm font-bold text-gray-800">${item.cantidad}</span><button onclick="updateQty('${item.id}', 1)" class="px-3 py-1 hover:bg-gray-200 text-gray-600 font-bold transition">+</button></div></div>`;
+                cont.appendChild(div);
             });
         }
-
         function renderPagination(totalPages) {
-            const container = document.getElementById('pagination'); container.innerHTML = '';
-            if (totalPages <= 1) return;
-
-            const createBtn = (html, disabled, onClick) => {
-                const b = document.createElement('button'); b.innerHTML = html; b.disabled = disabled; b.onclick = onClick;
-                b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${disabled ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50 backdrop-blur-sm' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white/80 backdrop-blur-sm shadow-sm'}`;
-                return b;
-            };
-
-            container.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
-            const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white/80 backdrop-blur-sm py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; container.appendChild(info);
-            container.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
+            const cont = document.getElementById('pagination'); cont.innerHTML = ''; if (totalPages <= 1) return;
+            const createBtn = (html, d, onClick) => { const b = document.createElement('button'); b.innerHTML = html; b.disabled = d; b.onclick = onClick; b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${d ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white/80 shadow-sm'}`; return b; };
+            cont.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
+            const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white/80 backdrop-blur-sm py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; cont.appendChild(info);
+            cont.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
         }
-
-        // ==========================================
-        // LÓGICA DE ESCÁNER
-        // ==========================================
 
         function startScanner() {
-            const modal = document.getElementById('scannerModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            
+            document.getElementById('scannerModal').classList.remove('hidden'); document.getElementById('scannerModal').classList.add('flex');
             html5QrcodeScanner = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-            
-            html5QrcodeScanner.start({ facingMode: "environment" }, config, 
-                (decodedText, decodedResult) => {
-                    stopScanner();
-                    document.getElementById('searchInput').value = decodedText;
-                    currentPage = 1;
-                    applyFilters();
-                },
-                (errorMessage) => {}
-            ).catch(err => {
-                showToast("Error al acceder a la cámara", "error");
-                stopScanner();
-            });
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (text) => { stopScanner(); document.getElementById('searchInput').value = text; currentPage = 1; applyFilters(); }, () => {}).catch(() => { showToast("Error de cámara", "error"); stopScanner(); });
         }
-
-        function stopScanner() {
-            const modal = document.getElementById('scannerModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().catch(err => console.error("Error al detener cámara", err));
-            }
-        }
-
-        // ==========================================
-        // GESTIÓN SEGURA DE API KEY DE GEMINI
-        // ==========================================
-
-        function getApiKey() {
-            return localStorage.getItem('gemini_api_key');
-        }
-
-        function openApiModal() {
-            document.getElementById('apiModal').classList.remove('hidden');
-            document.getElementById('apiModal').classList.add('flex');
-            
-            const currentKey = getApiKey();
-            if (currentKey) {
-                document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4);
-            }
-        }
-
-        function closeApiModal() {
-            document.getElementById('apiModal').classList.add('hidden');
-            document.getElementById('apiModal').classList.remove('flex');
-        }
-
-        function saveApiKey() {
-            const input = document.getElementById('apiKeyInput').value.trim();
-            if(input && !input.startsWith('****')) {
-                localStorage.setItem('gemini_api_key', input);
-                showToast("Clave guardada con éxito");
-            }
-            closeApiModal();
-        }
-
-        // ==========================================
-        // INTELIGENCIA ARTIFICIAL (GEMINI)
-        // ==========================================
+        function stopScanner() { document.getElementById('scannerModal').classList.add('hidden'); document.getElementById('scannerModal').classList.remove('flex'); if (html5QrcodeScanner) html5QrcodeScanner.stop().catch(()=>{}); }
 
         async function smartAISearch() {
-            const input = document.getElementById('searchInput');
-            const btnWand = document.getElementById('btnWand');
+            const input = document.getElementById('searchInput'), btnWand = document.getElementById('btnWand');
+            if (activeAISearchTerms.length > 0) { clearAISearch(); return; }
+            if(!input.value.trim()) { showToast("Escribe qué estás buscando primero", "error"); return; }
             
-            if (activeAISearchTerms.length > 0) {
-                clearAISearch();
-                return;
-            }
-
-            const query = input.value.trim();
-            if(!query) {
-                showToast("Escribe qué estás buscando primero", "error");
-                return;
-            }
-
             const apiKey = getApiKey();
-            if(!apiKey) {
-                openApiModal();
-                return;
-            }
+            if(!apiKey) { openApiModal(); return; }
 
-            const originalText = input.value;
-            input.disabled = true;
-            input.value = "IA pensando...";
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [{ 
-                        text: `Eres el farmacéutico jefe de una farmacia en Chile. El cliente tiene este requerimiento o síntoma: "${query}". Genera una lista de 10 a 15 términos estratégico para buscar en nuestro inventario. REGLAS ESTRICTAS: 1. Incluye los nombres de los PRINCIPIOS ACTIVOS GENÉRICOS que sirven para esto (ej: PARACETAMOL, CLORFENAMINA, IBUPROFENO). 2. Incluye las MARCAS COMERCIALES más vendidas en Chile para esto (ej: TAPSIN, NASTIZOL, TRIOVAL). 3. NO inventes medicamentos que no existen. 4. REGLA CRÍTICA DE ALERGIAS: Si el usuario busca un principio activo específico (ej: Fexofenadina), NO incluyas otras marcas de antialérgicos distintos (ej: NO incluyas Alerpriv, NO incluyas Zyrtec). Solo marcas de ese compuesto exacto. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas sin explicaciones.` 
-                    }]
-                }]
-            };
-            
+            const originalText = input.value; input.disabled = true; input.value = "IA pensando...";
             try {
-                const response = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-                const data = await response.json();
-                
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents: [{parts: [{ text: `Eres farmacéutico en Chile. El cliente tiene este requerimiento: "${originalText}". Genera una lista de 10 términos de búsqueda. REGLAS: 1. Incluye PRINCIPIOS ACTIVOS GENÉRICOS (ej: PARACETAMOL). 2. Incluye MARCAS COMERCIALES más vendidas en Chile. 3. NO inventes. 4. Si busca un antialérgico específico, no mezcles familias. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas.` }]}]}) });
+                const data = await res.json();
                 input.disabled = false;
-
-                if (data.error) {
-                    showToast("Error de Google: API Key inválida", "error");
-                    input.value = originalText;
-                    return;
+                if (data.error) { showToast("Error de API Key", "error"); input.value = originalText; return; }
+                if (data.candidates?.length > 0) {
+                    activeAISearchTerms = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).map(t => t.trim()).filter(t => t.length >= 3);
+                    input.value = ""; input.placeholder = `✨ IA activa para: "${originalText}".`;
+                    btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>'; btnWand.classList.remove('bg-spBlueDark', 'hover:bg-spBlue'); btnWand.classList.add('bg-red-500', 'hover:bg-red-600');
+                    document.getElementById('aiActiveBanner').classList.remove('hidden'); document.getElementById('aiQueryText').innerText = originalText;
+                    currentPage = 1; applyFilters();
                 }
-                
-                if (data.candidates && data.candidates.length > 0) {
-                    let aiText = data.candidates[0].content.parts[0].text.trim().replace(/```json/gi, '').replace(/```/g, '').trim();
-                    try {
-                        const rawTerms = JSON.parse(aiText);
-                        activeAISearchTerms = rawTerms.map(term => term.trim()).filter(term => term.length >= 3);
-                        
-                        input.value = "";
-                        input.placeholder = `✨ IA activa para: "${originalText}".`;
-                        
-                        btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>';
-                        btnWand.classList.remove('bg-spBlueDark', 'hover:bg-spBlue');
-                        btnWand.classList.add('bg-red-500', 'hover:bg-red-600');
-                        btnWand.title = "Apagar Inteligencia Artificial";
-                        document.getElementById('aiActiveBanner').classList.remove('hidden');
-                        document.getElementById('aiQueryText').innerText = originalText;
-
-                        currentPage = 1;
-                        applyFilters();
-
-                    } catch (e) {
-                        console.error("Error parseando resultados de IA:", e);
-                        showToast("La IA devolvió un formato incorrecto.", "error");
-                        input.value = originalText;
-                    }
-                }
-            } catch(e) { 
-                console.error(e); 
-                showToast("Error de red al conectar con IA.", "error");
-                input.disabled = false;
-                input.value = originalText;
-            }
+            } catch(e) { showToast("Error conectando con IA", "error"); input.disabled = false; input.value = originalText; }
         }
 
         function clearAISearch() {
-            activeAISearchTerms = [];
-            document.getElementById('aiActiveBanner').classList.add('hidden');
-            const searchInput = document.getElementById('searchInput');
-            searchInput.value = "";
-            searchInput.placeholder = "Nombre, síntoma o componente...";
-            
-            const btnWand = document.getElementById('btnWand');
-            btnWand.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-lg"></i>';
-            btnWand.classList.remove('bg-red-500', 'hover:bg-red-600');
-            btnWand.classList.add('bg-spBlueDark', 'hover:bg-spBlue');
-            btnWand.title = "Búsqueda Inteligente (Síntomas)";
-            currentPage = 1;
-            applyFilters();
+            activeAISearchTerms = []; document.getElementById('aiActiveBanner').classList.add('hidden');
+            const i = document.getElementById('searchInput'); i.value = ""; i.placeholder = "Nombre, síntoma o componente...";
+            const btnWand = document.getElementById('btnWand'); btnWand.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-lg"></i>';
+            btnWand.classList.remove('bg-red-500', 'hover:bg-red-600'); btnWand.classList.add('bg-spBlueDark', 'hover:bg-spBlue');
+            currentPage = 1; applyFilters();
         }
 
-        function triggerAICamera() {
-            document.getElementById('cameraInput').click();
-        }
-
-        function closeAIModal() {
-            const modal = document.getElementById('aiModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            if (document.getElementById('searchInput').value === "Procesando imagen con IA...") {
-                document.getElementById('searchInput').value = "";
-            }
-        }
-
-        function selectAISuggestion(selectedName) {
-            closeAIModal();
-            const searchInput = document.getElementById('searchInput');
-            searchInput.value = selectedName;
-            
-            clearAISearch(); 
-            searchInput.value = selectedName; 
-            applyFilters();
-        }
+        function triggerAICamera() { document.getElementById('cameraInput').click(); }
+        function closeAIModal() { document.getElementById('aiModal').classList.add('hidden'); document.getElementById('aiModal').classList.remove('flex'); if(document.getElementById('searchInput').value==="Procesando imagen con IA...") document.getElementById('searchInput').value=""; }
+        function selectAISuggestion(name) { closeAIModal(); clearAISearch(); document.getElementById('searchInput').value = name; applyFilters(); }
 
         async function processAIImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
+            const file = event.target.files[0]; if (!file) return;
+            
             const apiKey = getApiKey();
-            if(!apiKey) {
-                openApiModal();
-                return;
-            }
+            if(!apiKey) { openApiModal(); return; }
 
-            const searchInput = document.getElementById('searchInput');
-            searchInput.disabled = true;
-            searchInput.value = "Procesando imagen con IA...";
-
+            const input = document.getElementById('searchInput'); input.disabled = true; input.value = "Procesando imagen con IA...";
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; 
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                    callGeminiCameraAPI(base64Image, apiKey);
-                }
-                img.src = e.target.result;
-            }
-            reader.readAsDataURL(file);
-        }
-
-        async function callGeminiCameraAPI(base64Image, apiKey) {
-            const input = document.getElementById('searchInput');
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: "Eres un experto farmacéutico analizando el empaque de un producto. Extrae el nombre comercial principal. Dame de 3 a 5 variaciones probables. Responde ÚNICAMENTE con un array en formato JSON puro, sin explicaciones. Ejemplo estricto: [\"U.CARE\", \"U CARE CREMA\", \"U.CARE CUERPO\"]" },
-                        { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-                    ]
-                }]
-            };
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                
-                input.disabled = false;
-
-                if (data.error) {
-                    showToast("Error de Google: " + data.error.message, "error");
-                    input.value = "";
-                    return;
-                }
-                
-                if (data.candidates && data.candidates.length > 0) {
-                    let aiText = data.candidates[0].content.parts[0].text.trim();
-                    aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                    
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas'); const scale = 800 / img.width; canvas.width = 800; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                     try {
-                        const suggestions = JSON.parse(aiText);
-                        
-                        if (Array.isArray(suggestions) && suggestions.length > 0) {
-                            const listContainer = document.getElementById('aiSuggestionsList');
-                            listContainer.innerHTML = '';
-                            
-                            suggestions.forEach(sug => {
-                                const btn = document.createElement('button');
-                                btn.className = "bg-blue-50 border border-blue-100 text-spBlueDark hover:bg-spBlueDark hover:text-white font-extrabold py-3 px-4 rounded-xl transition text-left text-lg shadow-sm";
-                                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass mr-2 opacity-50"></i> ${sug}`;
-                                btn.onclick = () => selectAISuggestion(sug);
-                                listContainer.appendChild(btn);
-                            });
-                            
-                            const modal = document.getElementById('aiModal');
-                            modal.classList.remove('hidden');
-                            modal.classList.add('flex');
-                            input.value = "Esperando selección...";
-                            
-                        } else {
-                            throw new Error("El JSON no es un array válido");
-                        }
-                    } catch (parseError) {
-                        console.error("Error leyendo JSON de IA:", parseError);
-                        const fallbackName = aiText.split(',')[0].replace(/[\[\]"]/g, '').trim();
-                        input.value = fallbackName;
-                        
-                        clearAISearch();
-                        input.value = fallbackName;
-                        applyFilters();
-                    }
-
-                } else if (data.promptFeedback) {
-                    showToast("Google bloqueó el análisis de esta imagen.", "error");
-                    input.value = "";
-                } else {
-                    showToast("La IA no devolvió un nombre válido.", "error");
-                    input.value = "";
-                }
-            } catch (error) {
-                console.error("Error AI:", error);
-                showToast("Error de red al conectar con la IA.", "error");
-                input.value = "";
-                input.disabled = false;
-            }
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents: [{parts: [{ text: "Eres experto farmacéutico. Extrae el nombre comercial de la caja en esta imagen. Dame 3 variaciones. Devuelve UNICAMENTE un array JSON puro de strings. Ej: [\"U.CARE\", \"U CARE CREMA\"]" }, { inlineData: { mimeType: "image/jpeg", data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1] } }]}]}) });
+                        const data = await res.json(); input.disabled = false;
+                        if (data.candidates?.length > 0) {
+                            const sug = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim());
+                            const list = document.getElementById('aiSuggestionsList'); list.innerHTML = '';
+                            sug.forEach(s => { const b = document.createElement('button'); b.className = "bg-blue-50 border border-blue-100 text-spBlueDark hover:bg-spBlueDark hover:text-white font-extrabold py-3 px-4 rounded-xl transition text-left text-lg shadow-sm"; b.innerHTML = `<i class="fa-solid fa-magnifying-glass mr-2 opacity-50"></i> ${s}`; b.onclick = () => selectAISuggestion(s); list.appendChild(b); });
+                            document.getElementById('aiModal').classList.remove('hidden'); document.getElementById('aiModal').classList.add('flex'); input.value = "Esperando selección...";
+                        } else { showToast("No se detectó un nombre válido", "error"); input.value = ""; }
+                    } catch(e) { showToast("Error conectando con IA", "error"); input.disabled = false; input.value = ""; }
+                }; img.src = e.target.result;
+            }; reader.readAsDataURL(file);
         }
     </script>
 </body>
