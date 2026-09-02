@@ -8,17 +8,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- LIBRERÍAS DE LECTURA DE DATOS (Solo CSV, mucho más rápido) -->
+    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
     <script>
         tailwind.config = {
              theme: { extend: { colors: { 
-                 spBlue: '#7DA1BF',      /* Azul característico */
-                 spBlueDark: '#5A80A0',  /* Azul oscurecido */
-                 spWood: '#E6D3B3',      /* Tono madera claro */
-                 spWoodDark: '#CFA771'   /* Tono madera oscuro */
+                 spBlue: '#7DA1BF',      
+                 spBlueDark: '#5A80A0',  
+                 spWood: '#E6D3B3',      
+                 spWoodDark: '#CFA771'   
              } } }
          }
     </script>
@@ -234,7 +234,6 @@
         let html5QrcodeScanner = null;
         let compoundFilter = 'all'; 
         let activeAISearchTerms = [];
-        let imagenesBD = {}; 
 
         window.onload = () => {
             document.getElementById('searchInput').addEventListener('input', () => { 
@@ -245,7 +244,7 @@
             cargarBasesDeDatos();
         };
 
-        // SISTEMA DE NOTIFICACIONES TOAST (Mejora de UX)
+        // SISTEMA DE NOTIFICACIONES TOAST
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -285,13 +284,7 @@
                 }
             });
 
-            // Cargar mapa de imágenes
-            try {
-                const resJson = await fetch("imagenes_map.json?nocache=" + new Date().getTime());
-                if (resJson.ok) imagenesBD = await resJson.json();
-            } catch (e) { console.log("Aún no hay banco de imágenes."); }
-
-            // --- NUEVO: CARGAR LA FECHA DEL EXCEL ---
+            // CARGAR LA FECHA DEL EXCEL
             try {
                 const resMeta = await fetch("metadata.json?nocache=" + new Date().getTime());
                 if (resMeta.ok) {
@@ -301,7 +294,6 @@
             } catch (e) { 
                 document.getElementById('fechaActualizacion').innerText = "No disponible"; 
             }
-            // ----------------------------------------
 
             // Procesamiento concurrente
             try {
@@ -334,7 +326,6 @@
 
         function procesarDatos(rawDataMaestro, rawDataEan, rawDataIsp) {
             
-            // Buscar la cabecera (incluso si el script de Python ya limpió el CSV)
             let headerRowIndex = 0; 
             for (let i = 0; i < Math.min(5, rawDataMaestro.length); i++) {
                 let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
@@ -588,16 +579,22 @@
 
                 let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
                 
-                let urlImagen = imagenesBD[primaryBarcode];
+                // SISTEMA DE FOTOS EN TIEMPO REAL (Lógica Lazy Load Fallback)
+                let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
                 let imagenHtml = "";
                 
-                if (urlImagen && urlImagen !== "NO_IMAGE") {
+                if (primaryBarcode && primaryBarcode.length >= 8) {
                     imagenHtml = `
-                    <div class="w-full h-32 flex items-center justify-center mb-3 p-2 bg-white rounded-xl">
-                        <img src="${urlImagen}" alt="${item.nombre}" class="max-h-full max-w-full object-contain" onerror="this.style.display='none'">
+                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm">
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0">
+                            <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
+                        </div>
+                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" 
+                             alt="${item.nombre}" 
+                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
+                             onerror="this.style.display='none'">
                     </div>`;
                 } else {
-                    let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
                     imagenHtml = `
                     <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3">
                         <i class="fa-solid fa-pills text-5xl ${iconColor}"></i>
@@ -767,7 +764,6 @@
             document.getElementById('apiModal').classList.remove('hidden');
             document.getElementById('apiModal').classList.add('flex');
             
-            // Si ya hay una key guardada, mostrar que existe (oculta)
             const currentKey = getApiKey();
             if (currentKey) {
                 document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4);
