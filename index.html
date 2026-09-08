@@ -87,9 +87,7 @@
                 </div>
                 <div class="w-full md:w-2/3 flex items-center px-2 relative">
                     <i class="fa-solid fa-magnifying-glass text-gray-400 text-xl mr-2"></i>
-                    
                     <input type="text" id="searchInput" class="w-full py-3 pr-36 text-base md:text-lg outline-none text-gray-700 bg-transparent placeholder-gray-400" placeholder="Nombre, síntoma o componente..." autocomplete="off" disabled>
-                    
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
                         <button id="btnWand" onclick="smartAISearch()" class="bg-spBlueDark text-white w-10 h-10 rounded-xl hover:bg-spBlue shadow-md transition flex items-center justify-center" title="Búsqueda Inteligente (Síntomas)">
                             <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
@@ -133,11 +131,12 @@
             <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-500 font-normal">Leyendo inventario local</span></span>
         </div>
         
-        <!-- HEADER DE RESULTADOS CON SELECTOR DE VISTAS -->
+        <!-- HEADER DE RESULTADOS CON FILTROS SEPARADOS -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 hidden gap-4" id="resultsHeader">
             <div class="text-sm text-gray-600 font-bold bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-white/50 whitespace-nowrap" id="resultsCount"></div>
             
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                
                 <!-- Selector de Vistas -->
                 <div class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl flex items-center p-1 shadow-sm shrink-0">
                     <button onclick="setView('grid')" id="btnViewGrid" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-spBlueDark hover:bg-blue-50 transition" title="Vista Cuadrícula">
@@ -146,10 +145,19 @@
                     <button onclick="setView('compact')" id="btnViewCompact" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-spBlueDark hover:bg-blue-50 transition" title="Vista Compacta">
                         <i class="fa-solid fa-table-cells text-lg"></i>
                     </button>
-                    <!-- El botón de Lista ahora es el activo por defecto en el HTML -->
                     <button onclick="setView('list')" id="btnViewList" class="w-9 h-9 rounded-lg flex items-center justify-center text-spBlueDark bg-blue-50 transition" title="Vista Lista (Sin foto)">
                         <i class="fa-solid fa-list text-lg"></i>
                     </button>
+                </div>
+
+                <!-- NUEVO: Filtro de Stock (Disponibilidad) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <label for="stockFilter" class="text-[10px] font-black text-gray-500 uppercase tracking-wider hidden sm:block">Stock:</label>
+                    <select id="stockFilter" class="bg-white/90 backdrop-blur-sm border border-gray-200 text-spBlueDark text-sm rounded-xl focus:ring-spBlue focus:border-spBlue block px-3 py-2.5 shadow-sm font-bold outline-none cursor-pointer">
+                        <option value="all">Todos</option>
+                        <option value="in_stock">Disponibles</option>
+                        <option value="out_of_stock">Agotados</option>
+                    </select>
                 </div>
 
                 <!-- Filtro de Ordenar -->
@@ -159,7 +167,7 @@
                         <option value="name_asc">Nombre (A - Z)</option>
                         <option value="price_asc">Menor Precio</option>
                         <option value="price_desc">Mayor Precio</option>
-                        <option value="stock_desc">Disponibles</option>
+                        <!-- La opción "Disponibles" fue removida de aquí para no ser redundante -->
                     </select>
                 </div>
             </div>
@@ -169,7 +177,7 @@
         <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
     </main>
 
-    <!-- Modales (Carrito, Escáner, IA, Seguridad) -->
+    <!-- Modales Flotantes -->
     <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex flex-col">
@@ -254,13 +262,12 @@
         let html5QrcodeScanner = null;
         let compoundFilter = 'all'; 
         let activeAISearchTerms = [];
-        
-        // ESTADO DE VISTA: Ahora es 'list' por defecto
         let currentView = 'list'; 
 
         window.onload = () => {
             document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; applyFilters(); });
             document.getElementById('labFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+            document.getElementById('stockFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); }); // EVENTO DE FILTRO DE STOCK
             document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
             cargarBasesDeDatos();
         };
@@ -385,6 +392,7 @@
             const rawSearchInput = document.getElementById('searchInput').value.toLowerCase().trim();
             const terms = rawSearchInput === "" ? [] : rawSearchInput.replace(/\+/g, ' ').split(/\s+/);
             const selectedLab = document.getElementById('labFilter').value;
+            const stockFilterVal = document.getElementById('stockFilter').value;
 
             filteredProducts = allProducts.filter(p => {
                 const searchable = `${p.nombre} ${p.lab} ${p.principio} ${p.barcode}`.toLowerCase();
@@ -393,28 +401,31 @@
                     let matchIA = activeAISearchTerms.some(cleanTerm => p.nombre.toLowerCase().includes(cleanTerm.toLowerCase()) || p.principio.toLowerCase().includes(cleanTerm.toLowerCase()));
                     textMatch = terms.length > 0 ? (matchIA && textMatch) : matchIA;
                 }
+                
                 let compoundMatch = true;
                 if (compoundFilter !== 'all') {
                     const isCompound = String(p.principio || "").includes('+');
                     if (compoundFilter === 'mono') compoundMatch = !isCompound;
                     if (compoundFilter === 'comp') compoundMatch = isCompound;
                 }
-                return textMatch && (selectedLab === "" || p.lab === selectedLab) && compoundMatch;
+
+                // LÓGICA DEL NUEVO FILTRO DE STOCK
+                let stockMatch = true;
+                if (stockFilterVal === 'in_stock') stockMatch = p.disponible === true;
+                if (stockFilterVal === 'out_of_stock') stockMatch = p.disponible === false;
+
+                return textMatch && (selectedLab === "" || p.lab === selectedLab) && compoundMatch && stockMatch;
             });
 
             const sortVal = document.getElementById('sortFilter').value;
             filteredProducts.sort((a, b) => {
                 if (sortVal === 'price_asc') return a.precio - b.precio;
                 if (sortVal === 'price_desc') return b.precio - a.precio;
-                if (sortVal === 'stock_desc') return (b.disponible === true ? 1 : 0) - (a.disponible === true ? 1 : 0);
                 return a.nombre.localeCompare(b.nombre);
             });
             renderPage();
         }
 
-        // ==========================================
-        // RENDERIZADO OPTIMIZADO (SIN LAG)
-        // ==========================================
         function renderPage() {
             const grid = document.getElementById('productsGrid');
             const totalItems = filteredProducts.length;
@@ -424,7 +435,7 @@
             grid.innerHTML = '';
 
             if (totalItems === 0) {
-                grid.className = "grid gap-4"; // reset
+                grid.className = "grid gap-4"; 
                 grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500 bg-white/60 backdrop-blur-md rounded-3xl max-w-lg mx-auto shadow-sm border border-white/50"><i class="fa-solid fa-pills text-5xl mb-4 text-spBlueDark/50"></i><p class="text-lg font-bold">No encontramos resultados.</p></div>`;
                 document.getElementById('pagination').innerHTML = ''; return;
             }
@@ -441,18 +452,20 @@
                 const qtyInCart = cart.find(c => c.id === item.id)?.cantidad || 0;
                 const card = document.createElement('div');
                 
-                let stockBadge = item.disponible ? `<span class="bg-blue-50 text-spBlueDark px-1.5 md:px-2 py-0.5 rounded text-[9px] md:text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>` : `<span class="bg-red-50 text-red-500 px-1.5 md:px-2 py-0.5 rounded text-[9px] md:text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
+                let stockBadge = item.disponible 
+                    ? `<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-extrabold uppercase border border-green-200"><i class="fa-solid fa-check"></i> Disponible</span>` 
+                    : `<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-extrabold uppercase border border-red-300"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
                 
-                let btnClasses = currentView === 'list' ? 'w-full sm:w-32 py-2 mt-2 sm:mt-0' : 'w-full mt-3 py-2';
+                let btnClasses = currentView === 'list' ? 'w-full py-2 sm:py-2' : 'w-full mt-3 py-2';
                 let btnHtml = item.disponible 
                     ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="${btnClasses} bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold rounded-xl transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> ${currentView === 'compact' ? '' : 'Agregar'}</button>` 
-                    : `<button disabled class="${btnClasses} bg-gray-100 text-gray-400 font-bold rounded-xl cursor-not-allowed border border-gray-200">Agotado</button>`;
+                    : `<button disabled class="${btnClasses} bg-gray-50 text-red-400 font-bold rounded-xl cursor-not-allowed border border-red-100">Agotado</button>`;
                 
                 if(qtyInCart > 0) {
-                    btnHtml = `<div class="${currentView === 'list' ? 'w-full sm:w-32 mt-2 sm:mt-0' : 'w-full mt-3'} flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm h-10"><button onclick="updateQty('${item.id}', -1)" class="px-3 hover:bg-spBlue font-bold transition h-full">-</button><span class="font-bold text-sm">${qtyInCart}</span><button onclick="updateQty('${item.id}', 1)" class="px-3 hover:bg-spBlue font-bold transition h-full">+</button></div>`;
+                    btnHtml = `<div class="${btnClasses} flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm h-10"><button onclick="updateQty('${item.id}', -1)" class="px-3 hover:bg-spBlue font-bold transition h-full">-</button><span class="font-bold text-sm">${qtyInCart}</span><button onclick="updateQty('${item.id}', 1)" class="px-3 hover:bg-spBlue font-bold transition h-full">+</button></div>`;
                 }
 
-                let principioDisplay = item.principio ? `<div class="text-[9px] md:text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5 overflow-hidden"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="${currentView==='list'?'truncate':'texto-ajustable'}">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
+                let principioDisplay = item.principio ? `<div class="text-[9px] md:text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 flex-grow uppercase leading-tight flex items-start gap-1.5 overflow-hidden"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="${currentView==='list'?'truncate':'texto-ajustable'}">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
                 let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
                 
                 let urlManual = imagenesBD[primaryBarcode]; 
@@ -462,62 +475,73 @@
                 let imagenHtml = "";
 
                 if (urlManual) {
-                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-1"><img src="${urlManual}" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white"></div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><img src="${urlManual}" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white"></div>`;
                 } else if (item.cvSku) {
-                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://beta.cruzverde.cl/on/demandware.static/-/Sites-masterCatalog_Chile/default/images/large/${item.cvSku}-1.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.src='https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg'; this.onerror=function(){this.style.display='none'};"></div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://beta.cruzverde.cl/on/demandware.static/-/Sites-masterCatalog_Chile/default/images/large/${item.cvSku}-1.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.src='https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg'; this.onerror=function(){this.style.display='none'};"></div>`;
                 } else if (primaryBarcode && primaryBarcode.length >= 8) {
-                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.style.display='none'"></div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.style.display='none'"></div>`;
                 } else {
                     imagenHtml = `<div class="w-full ${imgHeight} flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>`;
                 }
 
-                // REMOVIDO EFECTO 'backdrop-blur-lg' DE LAS TARJETAS PARA ELIMINAR EL LAG
+                let cardBaseClass = "relative overflow-hidden transition duration-300 border";
+                let statusIndicator = item.disponible ? '' : '<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500 z-10"></div>';
+                let textColorTitle = item.disponible ? 'text-gray-800' : 'text-gray-500';
+                let textColorPrice = item.disponible ? 'text-spBlueDark' : 'text-red-500';
+
                 if (currentView === 'grid' || currentView === 'compact') {
-                    card.className = `bg-white rounded-2xl p-3 md:p-4 shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition duration-300`;
+                    let cardBg = item.disponible ? "bg-white hover:shadow-md border-gray-100 shadow-sm" : "bg-red-50/20 border-red-100 opacity-95";
+                    card.className = `${cardBaseClass} ${cardBg} rounded-2xl p-3 md:p-4 flex flex-col h-full`;
                     
                     let titleSize = currentView === 'compact' ? 'text-xs md:text-sm' : 'text-sm md:text-base';
                     let priceSize = currentView === 'compact' ? 'text-xl' : 'text-2xl';
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
+                        ${statusIndicator}
+                        <div class="flex justify-between items-start mb-2 pl-1">
                             <div class="text-[9px] font-black text-gray-400 uppercase tracking-wider truncate mr-1">${item.lab}</div>
                             ${stockBadge}
                         </div>
                         ${imagenHtml} 
-                        <h3 class="${titleSize} font-bold text-gray-800 mb-2 leading-snug texto-ajustable">${item.nombre}</h3>
-                        ${principioDisplay}
-                        ${primaryBarcode ? `<div class="text-[9px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}
-                        <div class="${priceSize} font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>
-                        ${btnHtml}
-                    `;
-                } else if (currentView === 'list') {
-                    // Vista Lista Horizontal (Sin Foto) - Sin efecto blur para máximo rendimiento
-                    card.className = `bg-white rounded-xl p-3 md:px-5 md:py-3 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:shadow-md transition duration-300`;
-                    
-                    let principioLinea = item.principio ? `<span class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-0.5 rounded border border-blue-100 truncate flex-shrink min-w-0"><i class="fa-solid fa-flask mr-1"></i>${item.principio}</span>` : '';
-
-                    card.innerHTML = `
-                        <div class="flex-grow min-w-0 flex flex-col">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[9px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</span>
-                                ${stockBadge}
-                            </div>
-                            <h3 class="text-sm md:text-base font-bold text-gray-800 truncate" title="${item.nombre}">${item.nombre}</h3>
-                            <div class="flex items-center gap-3 mt-1.5">
-                                ${primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 flex-shrink-0"><i class="fa-solid fa-barcode mr-1"></i>${primaryBarcode}</div>` : ''}
-                                ${principioLinea}
-                            </div>
+                        <h3 class="${titleSize} font-bold ${textColorTitle} mb-2 leading-snug texto-ajustable pl-1">${item.nombre}</h3>
+                        <div class="pl-1 flex-grow flex flex-col">
+                            ${principioDisplay}
+                            ${primaryBarcode ? `<div class="text-[9px] font-mono text-gray-400 mt-2 mb-2"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}
                         </div>
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
-                            <div class="text-xl md:text-2xl font-black text-spBlueDark sm:text-right sm:min-w-[100px]">${clpFmt.format(item.precio)}</div>
+                        <div class="${priceSize} font-black ${textColorPrice} leading-none pl-1">${clpFmt.format(item.precio)}</div>
+                        <div class="w-full mt-2 pl-1">
                             ${btnHtml}
                         </div>
                     `;
+                } else if (currentView === 'list') {
+                    let cardBg = item.disponible ? "bg-white hover:shadow-md border-gray-100 shadow-sm" : "bg-red-50/40 border-red-200 opacity-90";
+                    card.className = `${cardBaseClass} ${cardBg} rounded-xl p-3 md:p-4 flex w-full`;
+                    
+                    card.innerHTML = `
+                        ${statusIndicator}
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-6 items-center w-full pl-2">
+                            <div class="sm:col-span-7 flex flex-col min-w-0">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-wider truncate">${item.lab}</span>
+                                    ${stockBadge}
+                                </div>
+                                <h3 class="text-base md:text-lg font-bold ${textColorTitle} truncate" title="${item.nombre}">${item.nombre}</h3>
+                                <div class="flex items-center gap-3 mt-1.5">
+                                    ${primaryBarcode ? `<div class="text-[11px] font-mono text-gray-400 flex-shrink-0"><i class="fa-solid fa-barcode mr-1"></i>${primaryBarcode}</div>` : ''}
+                                    ${principioDisplay}
+                                </div>
+                            </div>
+                            <div class="sm:col-span-3 flex items-center sm:justify-start mt-2 sm:mt-0">
+                                <div class="text-2xl font-black ${textColorPrice}">${clpFmt.format(item.precio)}</div>
+                            </div>
+                            <div class="sm:col-span-2 flex items-center justify-end w-full mt-2 sm:mt-0">
+                                ${btnHtml}
+                            </div>
+                        </div>
+                    `;
                 }
-
                 grid.appendChild(card);
             });
-
             renderPagination(totalPages);
         }
 
@@ -550,7 +574,7 @@
         
         function renderPagination(totalPages) {
             const cont = document.getElementById('pagination'); cont.innerHTML = ''; if (totalPages <= 1) return;
-            const createBtn = (html, d, onClick) => { const b = document.createElement('button'); b.innerHTML = html; b.disabled = d; b.onclick = onClick; b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${d ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white/50' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white shadow-sm'}`; return b; };
+            const createBtn = (html, d, onClick) => { const b = document.createElement('button'); b.innerHTML = html; b.disabled = d; b.onclick = onClick; b.className = `w-10 h-10 rounded-xl flex items-center justify-center border-2 font-bold mx-1 transition ${d ? 'text-gray-300 border-gray-100 cursor-not-allowed bg-white' : 'text-spBlueDark border-spBlueDark hover:bg-spBlueDark hover:text-white bg-white shadow-sm'}`; return b; };
             cont.appendChild(createBtn('<i class="fa-solid fa-chevron-left"></i>', currentPage === 1, () => { currentPage--; renderPage(); window.scrollTo(0, 0); }));
             const info = document.createElement('span'); info.className = "text-sm font-bold text-gray-600 px-4 bg-white py-2 rounded-xl border border-gray-100 shadow-sm"; info.innerText = `Pág ${currentPage} de ${totalPages}`; cont.appendChild(info);
             cont.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
