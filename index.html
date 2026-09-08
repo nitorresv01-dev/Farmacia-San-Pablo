@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- LIBRERÍAS DE LECTURA DE DATOS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
@@ -37,14 +36,11 @@
 </head>
 <body class="flex flex-col min-h-screen pb-24 bg-fixed bg-center bg-cover" style="background-image: linear-gradient(rgba(255, 255, 255, 0.65), rgba(244, 247, 246, 0.95)), url('fondo-farmacia.jpg');">
     
-    <!-- Sistema de Notificaciones Toast -->
     <div id="toastContainer" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Header -->
     <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b-4 border-spBlue">
         <div class="px-4 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-3">
-                <!-- LOGO DE LA FARMACIA -->
                 <div class="relative flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md overflow-hidden border-2 border-spBlue">
                     <img src="logo.png" alt="Logo San Pablo" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\'fa-solid fa-plus text-spBlue text-2xl\'></i>'">
                 </div>
@@ -66,7 +62,6 @@
         </div>
     </header>
 
-    <!-- Hero Search -->
     <section class="backdrop-blur-md py-8 relative overflow-hidden shadow-inner border-b border-white/30" style="background-color: rgba(125, 161, 191, 0.45);">
         <div class="max-w-4xl mx-auto px-4 relative z-10 text-center">
             
@@ -109,7 +104,6 @@
                 </div>
             </div>
 
-            <!-- Banner de IA Activa -->
             <div id="aiActiveBanner" class="hidden mt-4 bg-white/95 backdrop-blur-sm border border-spBlue rounded-xl p-3 text-left shadow-lg relative z-20 transition-all duration-300">
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex-grow">
@@ -121,7 +115,6 @@
                 </div>
             </div>
 
-            <!-- Selector Monodroga vs Compuestos -->
             <div class="mt-5 flex justify-center w-full relative z-20">
                 <div class="bg-black/10 p-1 rounded-xl flex inline-flex text-xs md:text-sm font-bold backdrop-blur-md border border-white/30 shadow-inner">
                     <button id="btnFilterAll" onclick="setCompoundFilter('all')" class="px-3 md:px-5 py-2 rounded-lg bg-white/90 text-spBlueDark shadow-sm transition-all duration-300 border border-white">Todos</button>
@@ -139,25 +132,42 @@
             <span class="font-semibold text-base text-spBlueDark text-center">Conectando con bases de datos...<br><span class="text-xs text-gray-500 font-normal">Leyendo inventario local</span></span>
         </div>
         
-        <!-- HEADER DE RESULTADOS Y ORDENAMIENTO -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 hidden gap-3" id="resultsHeader">
-            <div class="text-sm text-gray-600 font-bold bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-white/50" id="resultsCount"></div>
-            <div class="flex items-center gap-2">
-                <label for="sortFilter" class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ordenar por:</label>
-                <select id="sortFilter" class="bg-white/90 backdrop-blur-sm border border-gray-200 text-spBlueDark text-sm rounded-xl focus:ring-spBlue focus:border-spBlue block px-3 py-2 shadow-sm font-bold outline-none cursor-pointer">
-                    <option value="name_asc">Nombre (A - Z)</option>
-                    <option value="price_asc">Precio (Menor a Mayor)</option>
-                    <option value="price_desc">Precio (Mayor a Menor)</option>
-                    <option value="stock_desc">Disponibles primero</option>
-                </select>
+        <!-- HEADER DE RESULTADOS (MODIFICADO CON SELECTOR DE VISTAS) -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 hidden gap-4" id="resultsHeader">
+            <div class="text-sm text-gray-600 font-bold bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-white/50 whitespace-nowrap" id="resultsCount"></div>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <!-- Selector de Vistas -->
+                <div class="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl flex items-center p-1 shadow-sm shrink-0">
+                    <button onclick="setView('grid')" id="btnViewGrid" class="w-9 h-9 rounded-lg flex items-center justify-center text-spBlueDark bg-blue-50 transition" title="Vista Cuadrícula">
+                        <i class="fa-solid fa-border-all text-lg"></i>
+                    </button>
+                    <button onclick="setView('compact')" id="btnViewCompact" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-spBlueDark hover:bg-blue-50 transition" title="Vista Compacta">
+                        <i class="fa-solid fa-table-cells text-lg"></i>
+                    </button>
+                    <button onclick="setView('list')" id="btnViewList" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-spBlueDark hover:bg-blue-50 transition" title="Vista Lista (Sin foto)">
+                        <i class="fa-solid fa-list text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Filtro de Ordenar -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <label for="sortFilter" class="text-[10px] font-black text-gray-500 uppercase tracking-wider hidden sm:block">Ordenar:</label>
+                    <select id="sortFilter" class="bg-white/90 backdrop-blur-sm border border-gray-200 text-spBlueDark text-sm rounded-xl focus:ring-spBlue focus:border-spBlue block px-3 py-2.5 shadow-sm font-bold outline-none cursor-pointer">
+                        <option value="name_asc">Nombre (A - Z)</option>
+                        <option value="price_asc">Menor Precio</option>
+                        <option value="price_desc">Mayor Precio</option>
+                        <option value="stock_desc">Disponibles</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <div id="productsGrid" class="grid gap-4"></div>
         <div id="pagination" class="flex justify-center items-center gap-2 mt-10 mb-8 flex-wrap"></div>
     </main>
 
-    <!-- Barra Flotante del Carrito -->
+    <!-- Modales (Carrito, Escáner, IA, Seguridad) -->
     <div id="floatingCart" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] z-50 transform translate-y-full transition-transform duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex flex-col">
@@ -170,7 +180,6 @@
         </div>
     </div>
 
-    <!-- Modal del Carrito -->
     <div id="cartModal" class="fixed inset-0 bg-black/60 z-[60] hidden opacity-0 flex justify-end backdrop-blur-sm">
         <div class="modal-content w-full md:w-[400px] bg-gray-50 h-full flex flex-col transform translate-x-full">
             <div class="bg-white px-5 py-4 flex justify-between items-center border-b border-gray-100 shadow-sm">
@@ -190,7 +199,6 @@
         </div>
     </div>
 
-    <!-- Modal del Escáner -->
     <div id="scannerModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-5 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="stopScanner()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -200,7 +208,6 @@
         </div>
     </div>
 
-    <!-- Modal de Resultados IA -->
     <div id="aiModal" class="fixed inset-0 bg-black/80 z-[80] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="closeAIModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
@@ -210,24 +217,15 @@
         </div>
     </div>
 
-    <!-- MODAL DE SEGURIDAD IA (CLAVE GEMINI + CONTRASEÑA) -->
     <div id="apiConfigModal" class="fixed inset-0 bg-black/80 z-[90] hidden flex-col justify-center items-center backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
             <button onclick="closeApiModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
-            
-            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center">
-                <i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA
-            </h3>
-            <p class="text-sm text-gray-600 mb-5 text-center">
-                Para activar el motor de Inteligencia Artificial, ingresa tu clave de Google Gemini y la contraseña de autorización del local. La clave se guardará sellada en este navegador.
-            </p>
-            
+            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center"><i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA</h3>
+            <p class="text-sm text-gray-600 mb-5 text-center">Para activar el motor de Inteligencia Artificial, ingresa tu clave de Google Gemini y la contraseña de autorización del local.</p>
             <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Clave de Google Gemini</label>
-            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Pega tu API Key de Gemini aquí...">
-            
+            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Pega tu API Key...">
             <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Contraseña de Farmacia</label>
             <input type="password" id="apiPasswordInput" class="w-full p-3 border border-gray-300 rounded-xl mb-5 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Ingresa la contraseña del sistema...">
-            
             <button onclick="saveApiKey()" class="w-full bg-spBlueDark hover:bg-spBlue text-white font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2">
                 <i class="fa-solid fa-floppy-disk"></i> Guardar y Activar
             </button>
@@ -238,7 +236,7 @@
         // ==========================================
         // 🔑 CONFIGURACIÓN Y VARIABLES GLOBALES
         // ==========================================
-        const CLAVE_GEMINI = ""; // Deja esto en blanco. La clave se pondrá desde la web.
+        const CLAVE_GEMINI = ""; // Deja esto en blanco.
         const PASSWORD_ACCESO = "sanpablo2026"; // Contraseña de seguridad de la farmacia
 
         const URL_CSV_MAESTRO = "Libro1.csv?nocache=" + new Date().getTime();
@@ -246,14 +244,17 @@
         let allProducts = [];
         let filteredProducts = [];
         let cart = [];
-        let imagenesBD = {}; // Diccionario para fotos manuales (imagenes_map.json)
+        let imagenesBD = {}; 
         let currentPage = 1;
-        const itemsPerPage = 24;
+        const itemsPerPage = 24; // Puedes aumentar esto si prefieres que la vista compacta muestre más
         const clpFmt = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
         
         let html5QrcodeScanner = null;
         let compoundFilter = 'all'; 
         let activeAISearchTerms = [];
+        
+        // ESTADO DE VISTA (NUEVO)
+        let currentView = 'grid'; // 'grid', 'compact', 'list'
 
         window.onload = () => {
             document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; applyFilters(); });
@@ -261,6 +262,21 @@
             document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
             cargarBasesDeDatos();
         };
+
+        // ==========================================
+        // MANEJO DE VISTAS (NUEVO)
+        // ==========================================
+        function setView(view) {
+            currentView = view;
+            const activeClass = "text-spBlueDark bg-blue-50";
+            const inactiveClass = "text-gray-400 hover:text-spBlueDark hover:bg-blue-50";
+            
+            document.getElementById('btnViewGrid').className = `w-9 h-9 rounded-lg flex items-center justify-center transition ${view === 'grid' ? activeClass : inactiveClass}`;
+            document.getElementById('btnViewCompact').className = `w-9 h-9 rounded-lg flex items-center justify-center transition ${view === 'compact' ? activeClass : inactiveClass}`;
+            document.getElementById('btnViewList').className = `w-9 h-9 rounded-lg flex items-center justify-center transition ${view === 'list' ? activeClass : inactiveClass}`;
+            
+            renderPage();
+        }
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
@@ -274,9 +290,6 @@
             setTimeout(() => { toast.classList.remove('opacity-100', 'translate-y-0'); toast.classList.add('opacity-0', 'translate-y-4'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        // ==========================================
-        // CARGA DE DATOS ULTRARRÁPIDA (Lectura Local)
-        // ==========================================
         async function cargarBasesDeDatos() {
             const fetchCSV = (url) => new Promise((resolve) => {
                 try {
@@ -284,7 +297,6 @@
                 } catch(e) { resolve([]); }
             });
 
-            // 1. Cargar Fecha de Actualización
             try {
                 const resMeta = await fetch("metadata.json?nocache=" + new Date().getTime());
                 if (resMeta.ok) {
@@ -293,13 +305,11 @@
                 }
             } catch (e) { document.getElementById('fechaActualizacion').innerText = "No disponible"; }
 
-            // 2. Cargar diccionario manual de fotos
             try {
                 const resImg = await fetch("imagenes_map.json?nocache=" + new Date().getTime());
                 if (resImg.ok) { imagenesBD = await resImg.json(); }
-            } catch (e) { console.log("Aún no hay banco de imágenes manual."); }
+            } catch (e) {}
 
-            // 3. Cargar inventario local (maestro procesado)
             try {
                 const maestroData = await fetchCSV(URL_CSV_MAESTRO);
                 procesarDatos(maestroData);
@@ -308,7 +318,6 @@
             }
         }
 
-        // Filtro de asociación
         function setCompoundFilter(type) {
             compoundFilter = type;
             const activeClass = "px-3 md:px-5 py-2 rounded-lg bg-white/90 text-spBlueDark shadow-sm transition-all duration-300 border border-white";
@@ -316,8 +325,7 @@
             document.getElementById('btnFilterAll').className = type === 'all' ? activeClass : inactiveClass;
             document.getElementById('btnFilterMono').className = type === 'mono' ? activeClass : inactiveClass;
             document.getElementById('btnFilterComp').className = type === 'comp' ? activeClass : inactiveClass;
-            currentPage = 1;
-            applyFilters();
+            currentPage = 1; applyFilters();
         }
 
         function procesarDatos(rawDataMaestro) {
@@ -326,13 +334,11 @@
                 let rowStr = rawDataMaestro[i].map(c => String(c).toUpperCase());
                 if (rowStr.includes("LAB") && rowStr.includes("PRECIO")) { headerRowIndex = i; break; }
             }
-
             if (headerRowIndex === -1 || rawDataMaestro.length === 0) {
                 document.getElementById('statusContainer').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-5xl mb-2 text-red-400"></i><h3 class="font-black text-xl text-red-500">Catálogo Vacío</h3>`;
                 return;
             }
 
-            // Identificar dinámicamente en qué columna está cada dato
             let headers = rawDataMaestro[headerRowIndex].map(c => String(c).toUpperCase());
             let idxLab = headers.indexOf("LAB");
             let idxCodbarra = headers.indexOf("CODBARRA");
@@ -346,32 +352,19 @@
             for (let i = headerRowIndex + 1; i < rawDataMaestro.length; i++) {
                 const row = rawDataMaestro[i];
                 if (!row || row.length < headers.length) continue;
-
                 let precioStr = typeof row[idxPrecio] === 'string' ? row[idxPrecio].replace(/[^0-9]/g, '') : row[idxPrecio];
                 let precio = parseInt(precioStr);
                 let stock = parseInt(row[idxStock]) || 0;
                 let labName = idxLab > -1 ? String(row[idxLab]).trim() : "";
                 let codigoBarras = idxCodbarra > -1 ? String(row[idxCodbarra]).trim() : "";
                 let nombre = idxDetalle > -1 ? String(row[idxDetalle]).trim() : "";
-                
-                // Las columnas inteligentes añadidas por nuestro Python
                 let principioNormalizado = (idxPrincipio > -1 && row[idxPrincipio]) ? String(row[idxPrincipio]).trim() : "";
                 let cvSku = (idxCvSku > -1 && row[idxCvSku]) ? String(row[idxCvSku]).trim() : "";
 
                 if (nombre && !isNaN(precio) && precio > 0) {
-                    tempProducts.push({ 
-                        id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i, 
-                        lab: labName, 
-                        nombre: nombre, 
-                        precio: precio, 
-                        principio: principioNormalizado, 
-                        barcode: codigoBarras, 
-                        cvSku: cvSku,
-                        disponible: stock > 0 
-                    });
+                    tempProducts.push({ id: btoa(unescape(encodeURIComponent(nombre))).substring(0, 15) + i, lab: labName, nombre: nombre, precio: precio, principio: principioNormalizado, barcode: codigoBarras, cvSku: cvSku, disponible: stock > 0 });
                 }
             }
-
             allProducts = tempProducts;
             const labFilter = document.getElementById('labFilter');
             labFilter.innerHTML = '<option value="">Todos los laboratorios</option>';
@@ -383,7 +376,6 @@
             document.getElementById('resultsHeader').classList.remove('hidden');
             document.getElementById('searchInput').disabled = false;
             document.getElementById('labFilter').disabled = false;
-            
             applyFilters();
         }
 
@@ -395,34 +387,32 @@
             filteredProducts = allProducts.filter(p => {
                 const searchable = `${p.nombre} ${p.lab} ${p.principio} ${p.barcode}`.toLowerCase();
                 let textMatch = terms.length === 0 ? true : terms.every(t => searchable.includes(t));
-                
                 if (activeAISearchTerms.length > 0) {
                     let matchIA = activeAISearchTerms.some(cleanTerm => p.nombre.toLowerCase().includes(cleanTerm.toLowerCase()) || p.principio.toLowerCase().includes(cleanTerm.toLowerCase()));
                     textMatch = terms.length > 0 ? (matchIA && textMatch) : matchIA;
                 }
-                
                 let compoundMatch = true;
                 if (compoundFilter !== 'all') {
                     const isCompound = String(p.principio || "").includes('+');
                     if (compoundFilter === 'mono') compoundMatch = !isCompound;
                     if (compoundFilter === 'comp') compoundMatch = isCompound;
                 }
-
                 return textMatch && (selectedLab === "" || p.lab === selectedLab) && compoundMatch;
             });
 
-            // LÓGICA DE ORDENAMIENTO
             const sortVal = document.getElementById('sortFilter').value;
             filteredProducts.sort((a, b) => {
                 if (sortVal === 'price_asc') return a.precio - b.precio;
                 if (sortVal === 'price_desc') return b.precio - a.precio;
                 if (sortVal === 'stock_desc') return (b.disponible === true ? 1 : 0) - (a.disponible === true ? 1 : 0);
-                return a.nombre.localeCompare(b.nombre); // name_asc
+                return a.nombre.localeCompare(b.nombre);
             });
-
             renderPage();
         }
 
+        // ==========================================
+        // RENDERIZADO CON MÚLTIPLES VISTAS
+        // ==========================================
         function renderPage() {
             const grid = document.getElementById('productsGrid');
             const totalItems = filteredProducts.length;
@@ -432,61 +422,100 @@
             grid.innerHTML = '';
 
             if (totalItems === 0) {
+                grid.className = "grid gap-4"; // reset
                 grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500 bg-white/60 backdrop-blur-md rounded-3xl max-w-lg mx-auto shadow-sm border border-white/50"><i class="fa-solid fa-pills text-5xl mb-4 text-spBlueDark/50"></i><p class="text-lg font-bold">No encontramos resultados.</p></div>`;
                 document.getElementById('pagination').innerHTML = ''; return;
+            }
+
+            // Aplicar clases de estructura según la vista seleccionada
+            if (currentView === 'grid') {
+                grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4";
+            } else if (currentView === 'compact') {
+                grid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3";
+            } else if (currentView === 'list') {
+                grid.className = "flex flex-col gap-2.5";
             }
 
             filteredProducts.slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage).forEach(item => {
                 const qtyInCart = cart.find(c => c.id === item.id)?.cantidad || 0;
                 const card = document.createElement('div');
-                card.className = `bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-sm border border-white/60 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
                 
-                let stockBadge = item.disponible ? `<span class="bg-blue-50 text-spBlueDark px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>` : `<span class="bg-red-50 text-red-500 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
-                let btnHtml = item.disponible ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="w-full mt-4 bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold py-2 rounded-xl transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Agregar</button>` : `<button disabled class="w-full mt-4 bg-gray-100 text-gray-400 font-bold py-2 rounded-xl cursor-not-allowed border border-gray-200">Sin Stock</button>`;
-                if(qtyInCart > 0) btnHtml = `<div class="w-full mt-4 flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm"><button onclick="updateQty('${item.id}', -1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">-</button><span class="font-bold">${qtyInCart} en lista</span><button onclick="updateQty('${item.id}', 1)" class="px-4 py-2 hover:bg-spBlue font-bold transition">+</button></div>`;
+                let stockBadge = item.disponible ? `<span class="bg-blue-50 text-spBlueDark px-1.5 md:px-2 py-0.5 rounded text-[9px] md:text-[10px] font-extrabold uppercase"><i class="fa-solid fa-check"></i> Disponible</span>` : `<span class="bg-red-50 text-red-500 px-1.5 md:px-2 py-0.5 rounded text-[9px] md:text-[10px] font-extrabold uppercase"><i class="fa-solid fa-xmark"></i> Agotado</span>`;
+                
+                // Botones adaptables a la vista
+                let btnClasses = currentView === 'list' ? 'w-full sm:w-32 py-2 mt-2 sm:mt-0' : 'w-full mt-3 py-2';
+                let btnHtml = item.disponible 
+                    ? `<button onclick="addToCart('${item.id}', '${item.nombre.replace(/'/g, "\\'")}', ${item.precio})" class="${btnClasses} bg-white text-spBlueDark hover:bg-spBlueDark hover:text-white border border-spBlueDark font-bold rounded-xl transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> ${currentView === 'compact' ? '' : 'Agregar'}</button>` 
+                    : `<button disabled class="${btnClasses} bg-gray-100 text-gray-400 font-bold rounded-xl cursor-not-allowed border border-gray-200">Agotado</button>`;
+                
+                if(qtyInCart > 0) {
+                    btnHtml = `<div class="${currentView === 'list' ? 'w-full sm:w-32 mt-2 sm:mt-0' : 'w-full mt-3'} flex items-center justify-between bg-spBlueDark text-white rounded-xl overflow-hidden shadow-sm h-10"><button onclick="updateQty('${item.id}', -1)" class="px-3 hover:bg-spBlue font-bold transition h-full">-</button><span class="font-bold text-sm">${qtyInCart}</span><button onclick="updateQty('${item.id}', 1)" class="px-3 hover:bg-spBlue font-bold transition h-full">+</button></div>`;
+                }
 
-                let principioDisplay = item.principio ? `<div class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="texto-ajustable">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
-                
+                let principioDisplay = item.principio ? `<div class="text-[9px] md:text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100 mb-2 flex-grow uppercase leading-tight flex items-start gap-1.5 overflow-hidden"><i class="fa-solid fa-flask mt-0.5 opacity-60"></i> <span class="${currentView==='list'?'truncate':'texto-ajustable'}">${item.principio}</span></div>` : `<div class="flex-grow"></div>`;
                 let primaryBarcode = item.barcode ? item.barcode.split(" ")[0] : "";
                 
-                // MOTOR HÍBRIDO DE IMÁGENES (4 CAPAS)
                 let urlManual = imagenesBD[primaryBarcode]; 
                 let iconColor = item.disponible ? "text-spBlue/20" : "text-gray-200";
+                
+                // Altura de imagen dinámica
+                let imgHeight = currentView === 'compact' ? 'h-24' : 'h-32';
                 let imagenHtml = "";
 
                 if (urlManual) {
-                    // Capa 1: Foto Manual (Si la pusiste tú)
-                    imagenHtml = `
-                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
-                        <img src="${urlManual}" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white">
-                    </div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><img src="${urlManual}" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white"></div>`;
                 } else if (item.cvSku) {
-                    // Capa 2 y 3: Cruz Verde rebotando a Yapp si falla
-                    imagenHtml = `
-                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
-                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>
-                        <img src="https://beta.cruzverde.cl/on/demandware.static/-/Sites-masterCatalog_Chile/default/images/large/${item.cvSku}-1.jpg" 
-                             alt="${item.nombre}" 
-                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
-                             onerror="this.src='https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg'; this.onerror=function(){this.style.display='none'};">
-                    </div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://beta.cruzverde.cl/on/demandware.static/-/Sites-masterCatalog_Chile/default/images/large/${item.cvSku}-1.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.src='https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg'; this.onerror=function(){this.style.display='none'};"></div>`;
                 } else if (primaryBarcode && primaryBarcode.length >= 8) {
-                    // Capa 3 directa: Si no tiene código de Cruz Verde, va a Yapp directo
-                    imagenHtml = `
-                    <div class="w-full h-32 relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1">
-                        <div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>
-                        <img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" 
-                             alt="${item.nombre}" 
-                             class="max-h-full max-w-full object-contain relative z-10 bg-white" 
-                             onerror="this.style.display='none'">
-                    </div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} relative mb-3 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm p-1"><div class="absolute inset-0 flex items-center justify-center bg-white/50 z-0"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div><img src="https://storage.googleapis.com/yapp-chile-products/150x150/${primaryBarcode}.jpg" alt="${item.nombre}" class="max-h-full max-w-full object-contain relative z-10 bg-white" onerror="this.style.display='none'"></div>`;
                 } else {
-                    // Capa 4: Ícono por defecto
-                    imagenHtml = `
-                    <div class="w-full h-32 flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>`;
+                    imagenHtml = `<div class="w-full ${imgHeight} flex items-center justify-center bg-white/50 border border-gray-100 rounded-xl mb-3"><i class="fa-solid fa-pills text-5xl ${iconColor}"></i></div>`;
                 }
 
-                card.innerHTML = `<div class="flex justify-between items-start mb-2"><div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</div>${stockBadge}</div>${imagenHtml}<h3 class="text-sm md:text-base font-bold text-gray-800 mb-1 leading-snug texto-ajustable">${item.nombre}</h3>${principioDisplay}${primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}<div class="text-2xl font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>${btnHtml}`;
+                // Generación de HTML dependiendo de la vista
+                if (currentView === 'grid' || currentView === 'compact') {
+                    card.className = `bg-white/90 backdrop-blur-lg rounded-2xl p-3 md:p-4 shadow-sm border border-white/60 flex flex-col h-full hover:shadow-lg hover:bg-white/95 transition duration-300`;
+                    
+                    let titleSize = currentView === 'compact' ? 'text-xs md:text-sm' : 'text-sm md:text-base';
+                    let priceSize = currentView === 'compact' ? 'text-xl' : 'text-2xl';
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-[9px] font-black text-gray-400 uppercase tracking-wider truncate mr-1">${item.lab}</div>
+                            ${stockBadge}
+                        </div>
+                        ${imagenHtml} 
+                        <h3 class="${titleSize} font-bold text-gray-800 mb-2 leading-snug texto-ajustable">${item.nombre}</h3>
+                        ${principioDisplay}
+                        ${primaryBarcode ? `<div class="text-[9px] font-mono text-gray-400 mb-2 mt-auto"><i class="fa-solid fa-barcode"></i> ${primaryBarcode}</div>` : '<div class="mt-auto"></div>'}
+                        <div class="${priceSize} font-black text-spBlueDark leading-none">${clpFmt.format(item.precio)}</div>
+                        ${btnHtml}
+                    `;
+                } else if (currentView === 'list') {
+                    // Vista Lista Horizontal (Sin Foto)
+                    card.className = `bg-white/90 backdrop-blur-lg rounded-xl p-3 md:px-5 md:py-3 shadow-sm border border-white/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:shadow-md hover:bg-white/95 transition duration-300`;
+                    
+                    let principioLinea = item.principio ? `<span class="text-[10px] font-bold text-spBlueDark bg-blue-50 px-2 py-0.5 rounded border border-blue-100 truncate flex-shrink min-w-0"><i class="fa-solid fa-flask mr-1"></i>${item.principio}</span>` : '';
+
+                    card.innerHTML = `
+                        <div class="flex-grow min-w-0 flex flex-col">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[9px] font-black text-gray-400 uppercase tracking-wider">${item.lab}</span>
+                                ${stockBadge}
+                            </div>
+                            <h3 class="text-sm md:text-base font-bold text-gray-800 truncate" title="${item.nombre}">${item.nombre}</h3>
+                            <div class="flex items-center gap-3 mt-1.5">
+                                ${primaryBarcode ? `<div class="text-[10px] font-mono text-gray-400 flex-shrink-0"><i class="fa-solid fa-barcode mr-1"></i>${primaryBarcode}</div>` : ''}
+                                ${principioLinea}
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 flex-shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
+                            <div class="text-xl md:text-2xl font-black text-spBlueDark sm:text-right sm:min-w-[100px]">${clpFmt.format(item.precio)}</div>
+                            ${btnHtml}
+                        </div>
+                    `;
+                }
+
                 grid.appendChild(card);
             });
 
@@ -528,9 +557,6 @@
             cont.appendChild(createBtn('<i class="fa-solid fa-chevron-right"></i>', currentPage === totalPages, () => { currentPage++; renderPage(); window.scrollTo(0, 0); }));
         }
 
-        // ==========================================
-        // LÓGICA DE ESCÁNER
-        // ==========================================
         function startScanner() {
             document.getElementById('scannerModal').classList.remove('hidden'); document.getElementById('scannerModal').classList.add('flex');
             html5QrcodeScanner = new Html5Qrcode("reader");
@@ -538,60 +564,35 @@
         }
         function stopScanner() { document.getElementById('scannerModal').classList.add('hidden'); document.getElementById('scannerModal').classList.remove('flex'); if (html5QrcodeScanner) html5QrcodeScanner.stop().catch(()=>{}); }
 
-        // ==========================================
-        // GESTIÓN SEGURA DE API KEY DE GEMINI
-        // ==========================================
-        function getApiKey() {
-            return localStorage.getItem('gemini_api_key');
-        }
+        function getApiKey() { return localStorage.getItem('gemini_api_key'); }
 
         function openApiModal() {
-            document.getElementById('apiConfigModal').classList.remove('hidden');
-            document.getElementById('apiConfigModal').classList.add('flex');
-            
+            document.getElementById('apiConfigModal').classList.remove('hidden'); document.getElementById('apiConfigModal').classList.add('flex');
             const currentKey = getApiKey();
             if (currentKey) { document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4); }
-            document.getElementById('apiPasswordInput').value = ""; // Limpiar siempre por seguridad
+            document.getElementById('apiPasswordInput').value = ""; 
         }
 
-        function closeApiModal() {
-            document.getElementById('apiConfigModal').classList.add('hidden');
-            document.getElementById('apiConfigModal').classList.remove('flex');
-        }
+        function closeApiModal() { document.getElementById('apiConfigModal').classList.add('hidden'); document.getElementById('apiConfigModal').classList.remove('flex'); }
 
         function saveApiKey() {
             const passInput = document.getElementById('apiPasswordInput').value;
-            if (passInput !== PASSWORD_ACCESO) {
-                showToast("Contraseña de autorización incorrecta", "error");
-                return;
-            }
-
+            if (passInput !== PASSWORD_ACCESO) { showToast("Contraseña de autorización incorrecta", "error"); return; }
             const keyInput = document.getElementById('apiKeyInput').value.trim();
-            if (keyInput && !keyInput.startsWith('****')) {
-                localStorage.setItem('gemini_api_key', keyInput);
-                showToast("Clave sellada y guardada con éxito");
-            } else if (keyInput.startsWith('****')) {
-                showToast("Autenticación correcta. Manteniendo clave anterior.");
-            }
+            if (keyInput && !keyInput.startsWith('****')) { localStorage.setItem('gemini_api_key', keyInput); showToast("Clave sellada y guardada con éxito");
+            } else if (keyInput.startsWith('****')) { showToast("Autenticación correcta. Manteniendo clave anterior."); }
             closeApiModal();
         }
 
-        // ==========================================
-        // INTELIGENCIA ARTIFICIAL (GEMINI)
-        // ==========================================
         async function smartAISearch() {
             const input = document.getElementById('searchInput'), btnWand = document.getElementById('btnWand');
             if (activeAISearchTerms.length > 0) { clearAISearch(); return; }
             if(!input.value.trim()) { showToast("Escribe qué estás buscando primero", "error"); return; }
-            
-            const apiKey = getApiKey();
-            if(!apiKey) { openApiModal(); return; }
-
+            const apiKey = getApiKey(); if(!apiKey) { openApiModal(); return; }
             const originalText = input.value; input.disabled = true; input.value = "IA pensando...";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents: [{parts: [{ text: `Eres farmacéutico en Chile. El cliente tiene este requerimiento: "${originalText}". Genera una lista de 10 términos de búsqueda. REGLAS: 1. Incluye PRINCIPIOS ACTIVOS GENÉRICOS (ej: PARACETAMOL). 2. Incluye MARCAS COMERCIALES más vendidas en Chile. 3. NO inventes. 4. Si busca un antialérgico específico, no mezcles familias. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas.` }]}]}) });
-                const data = await res.json();
-                input.disabled = false;
+                const data = await res.json(); input.disabled = false;
                 if (data.error) { showToast("Error de API Key", "error"); input.value = originalText; return; }
                 if (data.candidates?.length > 0) {
                     activeAISearchTerms = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).map(t => t.trim()).filter(t => t.length >= 3);
@@ -617,10 +618,7 @@
 
         async function processAIImage(event) {
             const file = event.target.files[0]; if (!file) return;
-            
-            const apiKey = getApiKey();
-            if(!apiKey) { openApiModal(); return; }
-
+            const apiKey = getApiKey(); if(!apiKey) { openApiModal(); return; }
             const input = document.getElementById('searchInput'); input.disabled = true; input.value = "Procesando imagen con IA...";
             const reader = new FileReader();
             reader.onload = function(e) {
