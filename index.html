@@ -628,10 +628,11 @@
                     input.value = originalText;
                 }
             } catch (e) {
-                showToast("Error conectando con IA", "error");
-                input.disabled = false;
-                input.value = originalText;
-            }
+    console.error("Detalle error IA:", e);
+    showToast("Error: " + e.message, "error");
+    input.disabled = false;
+    input.value = originalText; // en processAIImage deja ""
+}
         }
 
         function clearAISearch() {
@@ -702,11 +703,12 @@
                             showToast("No se detectó un nombre válido", "error");
                             input.value = "";
                         }
-                    } catch(e) {
-                        showToast("Error conectando con IA", "error");
-                        input.disabled = false;
-                        input.value = "";
-                    }
+                    } catch (e) {
+    console.error("Detalle error IA:", e);
+    showToast("Error: " + e.message, "error");
+    input.disabled = false;
+    input.value = ""; // en processAIImage deja ""
+}
                 };
                 img.src = e.target.result;
             };
