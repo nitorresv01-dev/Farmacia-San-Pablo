@@ -53,9 +53,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-4 text-sm font-semibold text-gray-500">
-                <button onclick="openApiModal()" class="text-gray-400 hover:text-spBlue transition" title="Configurar Inteligencia Artificial">
-                    <i class="fa-solid fa-gear text-lg"></i>
-                </button>
                 <div class="hidden md:flex items-center">
                     <i class="fa-solid fa-location-dot text-spBlueDark mr-2"></i> Covadonga 316, Cañete.
                 </div>
@@ -227,27 +224,11 @@
         </div>
     </div>
 
-    <div id="apiConfigModal" class="fixed inset-0 bg-black/80 z-[90] hidden flex-col justify-center items-center backdrop-blur-sm">
-        <div class="bg-white p-6 rounded-2xl w-11/12 max-w-md relative shadow-2xl">
-            <button onclick="closeApiModal()" class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-3xl font-bold z-10 leading-none">&times;</button>
-            <h3 class="text-xl font-black text-spBlueDark mb-2 text-center"><i class="fa-solid fa-lock mr-2 text-yellow-500"></i>Seguridad IA</h3>
-            <p class="text-sm text-gray-600 mb-5 text-center">Para activar el motor de Inteligencia Artificial, ingresa tu clave de Google Gemini y la contraseña de autorización del local.</p>
-            <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Clave de Google Gemini</label>
-            <input type="password" id="apiKeyInput" class="w-full p-3 border border-gray-300 rounded-xl mb-4 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Pega tu API Key...">
-            <label class="block text-[10px] font-black text-gray-500 mb-1 uppercase tracking-wide">Contraseña de Farmacia</label>
-            <input type="password" id="apiPasswordInput" class="w-full p-3 border border-gray-300 rounded-xl mb-5 outline-none focus:border-spBlueDark focus:ring-1 focus:ring-spBlue" placeholder="Ingresa la contraseña del sistema...">
-            <button onclick="saveApiKey()" class="w-full bg-spBlueDark hover:bg-spBlue text-white font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2">
-                <i class="fa-solid fa-floppy-disk"></i> Guardar y Activar
-            </button>
-        </div>
-    </div>
-
     <script>
         // ==========================================
         // 🔑 CONFIGURACIÓN Y VARIABLES GLOBALES
         // ==========================================
-        const CLAVE_GEMINI = ""; // Deja esto en blanco.
-        const PASSWORD_ACCESO = "sanpablo2026"; // Contraseña de seguridad de la farmacia
+        const URL_PROXY_IA = "https://proxy-sanpablo.tu-cuenta.workers.dev";
 
         const URL_CSV_MAESTRO = "Libro1.csv?nocache=" + new Date().getTime();
         
@@ -587,44 +568,70 @@
         }
         function stopScanner() { document.getElementById('scannerModal').classList.add('hidden'); document.getElementById('scannerModal').classList.remove('flex'); if (html5QrcodeScanner) html5QrcodeScanner.stop().catch(()=>{}); }
 
-        function getApiKey() { return localStorage.getItem('gemini_api_key'); }
-
-        function openApiModal() {
-            document.getElementById('apiConfigModal').classList.remove('hidden'); document.getElementById('apiConfigModal').classList.add('flex');
-            const currentKey = getApiKey();
-            if (currentKey) { document.getElementById('apiKeyInput').value = "********" + currentKey.slice(-4); }
-            document.getElementById('apiPasswordInput').value = ""; 
-        }
-
-        function closeApiModal() { document.getElementById('apiConfigModal').classList.add('hidden'); document.getElementById('apiConfigModal').classList.remove('flex'); }
-
-        function saveApiKey() {
-            const passInput = document.getElementById('apiPasswordInput').value;
-            if (passInput !== PASSWORD_ACCESO) { showToast("Contraseña de autorización incorrecta", "error"); return; }
-            const keyInput = document.getElementById('apiKeyInput').value.trim();
-            if (keyInput && !keyInput.startsWith('****')) { localStorage.setItem('gemini_api_key', keyInput); showToast("Clave sellada y guardada con éxito");
-            } else if (keyInput.startsWith('****')) { showToast("Autenticación correcta. Manteniendo clave anterior."); }
-            closeApiModal();
-        }
-
         async function smartAISearch() {
-            const input = document.getElementById('searchInput'), btnWand = document.getElementById('btnWand');
-            if (activeAISearchTerms.length > 0) { clearAISearch(); return; }
-            if(!input.value.trim()) { showToast("Escribe qué estás buscando primero", "error"); return; }
-            const apiKey = getApiKey(); if(!apiKey) { openApiModal(); return; }
-            const originalText = input.value; input.disabled = true; input.value = "IA pensando...";
+            const input = document.getElementById('searchInput');
+            const btnWand = document.getElementById('btnWand');
+
+            if (activeAISearchTerms.length > 0) {
+                clearAISearch();
+                return;
+            }
+            if (!input.value.trim()) {
+                showToast("Escribe qué estás buscando primero", "error");
+                return;
+            }
+
+            const originalText = input.value;
+            input.disabled = true;
+            input.value = "IA pensando...";
+
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents: [{parts: [{ text: `Eres farmacéutico en Chile. El cliente tiene este requerimiento: "${originalText}". Genera una lista de 10 términos de búsqueda. REGLAS: 1. Incluye PRINCIPIOS ACTIVOS GENÉRICOS (ej: PARACETAMOL). 2. Incluye MARCAS COMERCIALES más vendidas en Chile. 3. NO inventes. 4. Si busca un antialérgico específico, no mezcles familias. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas.` }]}]}) });
-                const data = await res.json(); input.disabled = false;
-                if (data.error) { showToast("Error de API Key", "error"); input.value = originalText; return; }
-                if (data.candidates?.length > 0) {
-                    activeAISearchTerms = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).map(t => t.trim()).filter(t => t.length >= 3);
-                    input.value = ""; input.placeholder = `✨ IA activa para: "${originalText}".`;
-                    btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>'; btnWand.classList.remove('bg-spBlueDark', 'hover:bg-spBlue'); btnWand.classList.add('bg-red-500', 'hover:bg-red-600');
-                    document.getElementById('aiActiveBanner').classList.remove('hidden'); document.getElementById('aiQueryText').innerText = originalText;
-                    currentPage = 1; applyFilters();
+                const res = await fetch(URL_PROXY_IA, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Eres farmacéutico en Chile. El cliente tiene este requerimiento: "${originalText}". Genera una lista de 10 términos de búsqueda. REGLAS: 1. Incluye PRINCIPIOS ACTIVOS GENÉRICOS (ej: PARACETAMOL). 2. Incluye MARCAS COMERCIALES más vendidas en Chile. 3. NO inventes. 4. Si busca un antialérgico específico, no mezcles familias. Devuelve ÚNICAMENTE un array JSON puro de strings en mayúsculas.`
+                            }]
+                        }]
+                    })
+                });
+                const data = await res.json();
+                input.disabled = false;
+
+                if (data.error) {
+                    showToast("Error de IA: " + (data.error.message || "Consulta rechazada"), "error");
+                    input.value = originalText;
+                    return;
                 }
-            } catch(e) { showToast("Error conectando con IA", "error"); input.disabled = false; input.value = originalText; }
+
+                if (data.candidates?.length > 0) {
+                    activeAISearchTerms = JSON.parse(
+                        data.candidates[0].content.parts[0].text
+                            .replace(/```json/gi, '')
+                            .replace(/```/g, '')
+                            .trim()
+                    ).map(t => t.trim()).filter(t => t.length >= 3);
+
+                    input.value = "";
+                    input.placeholder = `✨ IA activa para: "${originalText}".`;
+                    btnWand.innerHTML = '<i class="fa-solid fa-xmark text-xl"></i>';
+                    btnWand.classList.remove('bg-spBlueDark', 'hover:bg-spBlue');
+                    btnWand.classList.add('bg-red-500', 'hover:bg-red-600');
+                    document.getElementById('aiActiveBanner').classList.remove('hidden');
+                    document.getElementById('aiQueryText').innerText = originalText;
+                    currentPage = 1;
+                    applyFilters();
+                } else {
+                    showToast("La IA no devolvió resultados", "error");
+                    input.value = originalText;
+                }
+            } catch (e) {
+                showToast("Error conectando con IA", "error");
+                input.disabled = false;
+                input.value = originalText;
+            }
         }
 
         function clearAISearch() {
@@ -641,26 +648,69 @@
 
         async function processAIImage(event) {
             const file = event.target.files[0]; if (!file) return;
-            const apiKey = getApiKey(); if(!apiKey) { openApiModal(); return; }
-            const input = document.getElementById('searchInput'); input.disabled = true; input.value = "Procesando imagen con IA...";
+            const input = document.getElementById('searchInput'); 
+            input.disabled = true; 
+            input.value = "Procesando imagen con IA...";
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = async function() {
-                    const canvas = document.createElement('canvas'); const scale = 800 / img.width; canvas.width = 800; canvas.height = img.height * scale;
+                    const canvas = document.createElement('canvas'); 
+                    const scale = 800 / img.width; 
+                    canvas.width = 800; 
+                    canvas.height = img.height * scale;
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
                     try {
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents: [{parts: [{ text: "Eres experto farmacéutico. Extrae el nombre comercial de la caja en esta imagen. Dame 3 variaciones. Devuelve UNICAMENTE un array JSON puro de strings. Ej: [\"U.CARE\", \"U CARE CREMA\"]" }, { inlineData: { mimeType: "image/jpeg", data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1] } }]}]}) });
-                        const data = await res.json(); input.disabled = false;
+                        const res = await fetch(URL_PROXY_IA, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [
+                                        { text: "Eres experto farmacéutico. Extrae el nombre comercial de la caja en esta imagen. Dame 3 variaciones. Devuelve UNICAMENTE un array JSON puro de strings. Ej: [\"U.CARE\", \"U CARE CREMA\"]" },
+                                        { inlineData: { mimeType: "image/jpeg", data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1] } }
+                                    ]
+                                }]
+                            })
+                        });
+                        const data = await res.json(); 
+                        input.disabled = false;
+
+                        if (data.error) {
+                            showToast("Error de IA: " + (data.error.message || "Consulta rechazada"), "error");
+                            input.value = "";
+                            return;
+                        }
+
                         if (data.candidates?.length > 0) {
                             const sug = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim());
-                            const list = document.getElementById('aiSuggestionsList'); list.innerHTML = '';
-                            sug.forEach(s => { const b = document.createElement('button'); b.className = "bg-blue-50 border border-blue-100 text-spBlueDark hover:bg-spBlueDark hover:text-white font-extrabold py-3 px-4 rounded-xl transition text-left text-lg shadow-sm"; b.innerHTML = `<i class="fa-solid fa-magnifying-glass mr-2 opacity-50"></i> ${s}`; b.onclick = () => selectAISuggestion(s); list.appendChild(b); });
-                            document.getElementById('aiModal').classList.remove('hidden'); document.getElementById('aiModal').classList.add('flex'); input.value = "Esperando selección...";
-                        } else { showToast("No se detectó un nombre válido", "error"); input.value = ""; }
-                    } catch(e) { showToast("Error conectando con IA", "error"); input.disabled = false; input.value = ""; }
-                }; img.src = e.target.result;
-            }; reader.readAsDataURL(file);
+                            const list = document.getElementById('aiSuggestionsList'); 
+                            list.innerHTML = '';
+                            sug.forEach(s => {
+                                const b = document.createElement('button');
+                                b.className = "bg-blue-50 border border-blue-100 text-spBlueDark hover:bg-spBlueDark hover:text-white font-extrabold py-3 px-4 rounded-xl transition text-left text-lg shadow-sm";
+                                b.innerHTML = `<i class="fa-solid fa-magnifying-glass mr-2 opacity-50"></i> ${s}`;
+                                b.onclick = () => selectAISuggestion(s);
+                                list.appendChild(b);
+                            });
+                            document.getElementById('aiModal').classList.remove('hidden');
+                            document.getElementById('aiModal').classList.add('flex');
+                            input.value = "Esperando selección...";
+                        } else {
+                            showToast("No se detectó un nombre válido", "error");
+                            input.value = "";
+                        }
+                    } catch(e) {
+                        showToast("Error conectando con IA", "error");
+                        input.disabled = false;
+                        input.value = "";
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
     </script>
 </body>
